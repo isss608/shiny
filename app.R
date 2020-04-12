@@ -289,8 +289,8 @@ server <- function(input, output) {
               control.position=c("left","bottom"),
               colorNA="Black"
       ) +
-      tmap_options(basemaps=c("Esri.WorldGrayCanvas","Esri.WorldTopoMap","Esri.WorldImagery","OpenStreetMap"),
-                   basemaps.alpha=c(0.9,0.7,0.7,0.7)
+      tmap_options(basemaps=c("Stamen.TonerLite","Esri.WorldGrayCanvas","OpenStreetMap"),
+                   basemaps.alpha=c(0.6,0.8,0.8)
       )
     tmap_leaflet(lisaPlot, in.shiny=TRUE)
     
@@ -328,8 +328,8 @@ server <- function(input, output) {
                 control.position=c("left","bottom"),
                 colorNA="Black"
         ) +
-        tmap_options(basemaps=c("Esri.WorldGrayCanvas","Esri.WorldTopoMap","Esri.WorldImagery","OpenStreetMap"),
-                     basemaps.alpha=c(0.9,0.7,0.7,0.7)
+        tmap_options(basemaps=c("Stamen.TonerLite","Esri.WorldGrayCanvas","OpenStreetMap"),
+                     basemaps.alpha=c(0.6,0.8,0.8)
         )
       tmap_leaflet(tmRaw, in.shiny=TRUE)
 
