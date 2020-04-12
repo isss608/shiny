@@ -8,19 +8,29 @@ library(spdep)
 library(rgeos)
 
 # -----Load data files
+load("data/maplad_sp.rda")
 load("data/mapward_sp.rda")
 load("data/mapmsoa_sp.rda")
+load("data/maplsoa_sp.rda")
 
 
 # -----All Global Parameters here
 
+# Level of Detail
+varLod <- c(
+  "LAD",
+  "Ward",
+  "MSOA",
+  "LSOA"
+)
+  
 # List of Borough, Ward
-varBor <- str_sort(unique(mapward_sp@data$bor_nm))
+varLad <- str_sort(unique(mapward_sp@data$lad_nm))
 # varWard <- unique(mapward_sp@data$ward_nm)
 
 # Choices for drop-downs
-# Measures
-varMeasure <- c(
+# Measures1
+varMeasure1 <- c(
   "Weight"="weight",
   "Volume"="volume",
   "Fat"="fat",
@@ -64,6 +74,47 @@ varMeasure <- c(
   "Obese_6-10"="prevalence_obese_y6"
 )
 
+# Measures2
+varMeasure2 <- c(
+  "Weight"="weight",
+  "Volume"="volume",
+  "Fat"="fat",
+  "Saturate"="saturate",
+  "Salt"="salt",
+  "Sugar"="sugar",
+  "Protein"="protein",
+  "Carb"="carb",
+  "Fibre"="fibre",
+  "Alcohol"="alcohol",
+  "Energy_Fat"="energy_fat",
+  "Energy_Saturate"="energy_saturate",
+  "Energy_Sugar"="energy_sugar",
+  "Energy_Protein"="energy_protein",
+  "Energy_Carb"="energy_carb",
+  "Energy_Fibre"="energy_fibre",
+  "Energy_Alcohol"="energy_alcohol",
+  "Energy_Total"="energy_tot",
+  "Energy_Density"="energy_density",
+  "H_Nutrients_Weight"="h_nutrients_weight",
+  "H_Nutrients_Weight_Norm"="h_nutrients_weight_norm",
+  "H_Nutrients_Calories"="h_nutrients_calories",
+  "H_Nutrients_Calories_Norm"="h_nutrients_calories_norm",
+  "H_Items"="h_items",
+  "H_Items_Norm"="h_items_norm",
+  "H_Items_Weight"="h_items_weight",
+  "H_Items_Weight_Norm"="h_items_weight_norm",
+  "Representativeness"="representativeness_norm",
+  "Population"="population",
+  "Male"="male",
+  "Female"="female",
+  "Age_0-17"="age_0_17",
+  "Age_18-64"="age_18_64",
+  "Age_65+"="age_65",
+  "Avg_Age"="avg_age",
+  "Area_sqkm"="area_sq_km",
+  "People_per_sqkm"="people_per_sq_km"
+)
+
 
 # -----Define UI for random distribution app ----
 ui <- fluidPage(theme=shinytheme("cerulean"),
@@ -98,20 +149,29 @@ ui <- fluidPage(theme=shinytheme("cerulean"),
                 tabPanel("LISA", value="lisa", fluid=TRUE, icon=icon("globe-americas"),
                          sidebarLayout(position="right", fluid=TRUE,
                              sidebarPanel(width=3, fluid=TRUE,
-                                          selectInput(inputId="inBor",
-                                                      label="Borough",
-                                                      choices=varBor,
+                                          selectInput(inputId="inLod",
+                                                      label="Level of Detail",
+                                                      choices=varLod,
+                                                      selected="Ward",
+                                                      multiple=FALSE,
+                                                      width="100%"
+                                          ),
+                                          conditionalPanel(condition="input.inLod!='LAD'",
+                                          selectInput(inputId="inLad",
+                                                      label="Local Authority District",
+                                                      choices=varLad,
                                                       selected="Newham",
                                                       multiple=FALSE,
                                                       width="100%"
+                                          )
                                           ),
-                                          selectInput(inputId="inMeasure",
-                                                      label="Measure",
-                                                      choices=varMeasure,
-                                                      selected="energy_carb",
-                                                      multiple=FALSE,
-                                                      width="100%"
-                                          ),
+                                            selectInput(inputId="inMeasure",
+                                                        label="Measure",
+                                                        choices=varMeasure1,
+                                                        selected="energy_carb",
+                                                        multiple=FALSE,
+                                                        width="100%"
+                                            ),
                              ),
                              mainPanel(width=9,
                                        fluidRow(
@@ -212,8 +272,9 @@ ui <- fluidPage(theme=shinytheme("cerulean"),
 
 
 
+
 # -----Server Function
-server <- function(input, output) {
+server <- function(input, output, session) {
 
 
 # -----All Global functions, variables here
@@ -229,8 +290,22 @@ server <- function(input, output) {
 # -----Lisa functions
   output$lisa <- renderLeaflet({
     
-    subset <- mapward_sp[mapward_sp$bor_nm==input$inBor,] 
+    if (input$inLod=="LAD") {
+    subset <- maplad_sp
     indicator <- pull(subset@data, input$inMeasure)
+    }
+    else if (input$inLod=="Ward") {
+      subset <- mapward_sp[mapward_sp$lad_nm==input$inLad,] 
+      indicator <- pull(subset@data, input$inMeasure)
+    }
+    else if (input$inLod=="MSOA") {
+      subset <- mapmsoa_sp[mapmsoa_sp$lad_nm==input$inLad,] 
+      indicator <- pull(subset@data, input$inMeasure)
+    }
+    else {
+      subset <- maplsoa_sp[maplsoa_sp$lad_nm==input$inLad,] 
+      indicator <- pull(subset@data, input$inMeasure)
+    }
     
     if (input$inLisaMethod=="q") {
       wm <- poly2nb(subset, queen=TRUE)
@@ -289,17 +364,31 @@ server <- function(input, output) {
               control.position=c("left","bottom"),
               colorNA="Black"
       ) +
-      tmap_options(basemaps=c("Stamen.TonerLite","Esri.WorldGrayCanvas","OpenStreetMap"),
-                   basemaps.alpha=c(0.5,0.7,0.7)
+      tmap_options(basemaps=c("Esri.WorldGrayCanvas","Stamen.TonerLite","OpenStreetMap"),
+                   basemaps.alpha=c(0.8,0.5,0.7)
       )
     tmap_leaflet(lisaPlot, in.shiny=TRUE)
     
   })
 
   output$reference <- renderLeaflet({
-
-    subset <- mapward_sp[mapward_sp$bor_nm==input$inBor,]
-    refDf <- cbind(subset, rv$lmoran)
+    
+    if (input$inLod=="LAD") {
+      subset <- maplad_sp
+      refDf <- cbind(subset, rv$lmoran)
+    }
+    else if (input$inLod=="Ward") {
+      subset <- mapward_sp[mapward_sp$lad_nm==input$inLad,] 
+      refDf <- cbind(subset, rv$lmoran)
+    }
+    else if (input$inLod=="MSOA") {
+      subset <- mapmsoa_sp[mapmsoa_sp$lad_nm==input$inLad,] 
+      refDf <- cbind(subset, rv$lmoran)
+    }
+    else {
+      subset <- maplsoa_sp[maplsoa_sp$lad_nm==input$inLad,] 
+      refDf <- cbind(subset, rv$lmoran)
+    }
 
     if (input$inReference=="r"){
       tmFill <- input$inMeasure
@@ -328,13 +417,24 @@ server <- function(input, output) {
                 control.position=c("left","bottom"),
                 colorNA="Black"
         ) +
-        tmap_options(basemaps=c("Stamen.TonerLite","Esri.WorldGrayCanvas","OpenStreetMap"),
-                     basemaps.alpha=c(0.5,0.7,0.7)
+        tmap_options(basemaps=c("Esri.WorldGrayCanvas","Stamen.TonerLite","OpenStreetMap"),
+                     basemaps.alpha=c(0.8,0.5,0.7)
         )
       tmap_leaflet(tmRaw, in.shiny=TRUE)
 
   })
 
+
+# observe({input$inLod
+#   if (input$inLod!="LSOA") {
+#     updateSelectInput(session, input$inMeasure, choices=varMeasure1,
+#                       selected="energy_carb")
+#   }
+#   else {
+#     updateSelectInput(session, input$inMeasure, choices=varMeasure2,
+#                       selected="energy_carb")
+#   }
+# }, priority=1)
 
 observe({
   coords1 <- input$lisa_bounds
