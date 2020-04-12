@@ -8,14 +8,15 @@ library(spdep)
 library(rgeos)
 
 # -----Load data files
-load("data/map_sp.rda")
+load("data/mapward_sp.rda")
+load("data/mapmsoa_sp.rda")
 
 
 # -----All Global Parameters here
 
 # List of Borough, Ward
-varBor <- str_sort(unique(map_sp@data$bor_nm))
-varWard <- unique(map_sp@data$ward_nm)
+varBor <- str_sort(unique(mapward_sp@data$bor_nm))
+# varWard <- unique(mapward_sp@data$ward_nm)
 
 # Choices for drop-downs
 # Measures
@@ -60,8 +61,7 @@ varMeasure <- c(
   "Overweight_4-5"="prevalence_overweight_reception",
   "Overweight_6-10"="prevalence_overweight_y6",
   "Obese_4-5"="prevalence_obese_reception",
-  "Obese_6-10"="prevalence_obese_y6",
-  "Diabetic"="estimated_diabetes_prevalence"
+  "Obese_6-10"="prevalence_obese_y6"
 )
 
 
@@ -229,7 +229,7 @@ server <- function(input, output) {
 # -----Lisa functions
   output$lisa <- renderLeaflet({
     
-    subset <- map_sp[map_sp$bor_nm==input$inBor,] 
+    subset <- mapward_sp[mapward_sp$bor_nm==input$inBor,] 
     indicator <- pull(subset@data, input$inMeasure)
     
     if (input$inLisaMethod=="q") {
@@ -241,7 +241,7 @@ server <- function(input, output) {
       rswm <- nb2listw(wm, zero.policy=TRUE)
     }
     else if (input$inLisaMethod=="knn") {
-      wm <- knn2nb(knearneigh(coordinates(subset), k=input$k), row.names=row.names(subset$ward_nm))
+      wm <- knn2nb(knearneigh(coordinates(subset), k=input$k), row.names=row.names(subset$area_nm))
       rswm <- nb2listw(wm, zero.policy=TRUE)
     }
     else if (input$inLisaMethod=="idw-q") {
@@ -280,17 +280,17 @@ server <- function(input, output) {
               style="cat",
               palette="Blues",
               labels=legend,
-              id="ward_nm",
-              alpha=0.7
+              id="area_nm",
+              alpha=0.8
       ) +
-      tm_borders(alpha=0.7
+      tm_borders(alpha=0.8
       ) +
       tm_view(view.legend.position=c("right","bottom"),
               control.position=c("left","bottom"),
               colorNA="Black"
       ) +
       tmap_options(basemaps=c("Stamen.TonerLite","Esri.WorldGrayCanvas","OpenStreetMap"),
-                   basemaps.alpha=c(0.6,0.8,0.8)
+                   basemaps.alpha=c(0.5,0.7,0.7)
       )
     tmap_leaflet(lisaPlot, in.shiny=TRUE)
     
@@ -298,7 +298,7 @@ server <- function(input, output) {
 
   output$reference <- renderLeaflet({
 
-    subset <- map_sp[map_sp$bor_nm==input$inBor,]
+    subset <- mapward_sp[mapward_sp$bor_nm==input$inBor,]
     refDf <- cbind(subset, rv$lmoran)
 
     if (input$inReference=="r"){
@@ -319,17 +319,17 @@ server <- function(input, output) {
                 title=tmTitle,
                 style=input$inBinning,
                 palette="Blues",
-                id="ward_nm",
-                alpha=0.7
+                id="area_nm",
+                alpha=0.8
         ) +
-        tm_borders(alpha=0.7
+        tm_borders(alpha=0.8
         ) +
         tm_view(view.legend.position=c("right","bottom"),
                 control.position=c("left","bottom"),
                 colorNA="Black"
         ) +
         tmap_options(basemaps=c("Stamen.TonerLite","Esri.WorldGrayCanvas","OpenStreetMap"),
-                     basemaps.alpha=c(0.6,0.8,0.8)
+                     basemaps.alpha=c(0.5,0.7,0.7)
         )
       tmap_leaflet(tmRaw, in.shiny=TRUE)
 
