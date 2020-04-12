@@ -238,6 +238,13 @@ ui <- fluidPage(theme=shinytheme("cerulean"),
                                                             selected="quantile",
                                                             multiple=FALSE,
                                                             width="100%"
+                                                ),
+                                                sliderInput(inputId="inN",
+                                                            label="Select number of classes",
+                                                            min=2,
+                                                            max=10,
+                                                            value=5,
+                                                            width="100%"
                                                 )
                                          )
                                        )
@@ -347,13 +354,14 @@ server <- function(input, output, session) {
     subset$quadrant <- quadrant
     
     legend <- c("insignificant","low-low", "low-high", "high-low", "high-high")
-    colors <- c("white","blue","cyan","pink","red")
+    colors <- c("#FFFFFF","#5691C0","#CBE0EB","#F3BFA6","#CA5D5E")
     
     lisaPlot <- tm_shape(subset) +
       tm_fill("quadrant",
               title="LISA Cluster",
               style="cat",
-              palette="Blues",
+              palette=colors,
+              midpoint=0,
               labels=legend,
               id="area_nm",
               alpha=0.8
@@ -403,11 +411,13 @@ server <- function(input, output, session) {
       tmTitle <- "P-Values"
     }
     
-      tmRaw <- tm_shape(refDf) +
+      refPlot <- tm_shape(refDf) +
         tm_fill(tmFill,
                 title=tmTitle,
                 style=input$inBinning,
-                palette="Blues",
+                n=input$inN,
+                palette="RdBu",
+                midpoint=0,
                 id="area_nm",
                 alpha=0.8
         ) +
@@ -420,7 +430,7 @@ server <- function(input, output, session) {
         tmap_options(basemaps=c("Esri.WorldGrayCanvas","Stamen.TonerLite","OpenStreetMap"),
                      basemaps.alpha=c(0.8,0.5,0.7)
         )
-      tmap_leaflet(tmRaw, in.shiny=TRUE)
+      tmap_leaflet(refPlot, in.shiny=TRUE)
 
   })
 
