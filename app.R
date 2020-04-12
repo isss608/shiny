@@ -152,7 +152,7 @@ ui <- fluidPage(theme=shinytheme("cerulean"),
                                           selectInput(inputId="inLod",
                                                       label="Level of Detail",
                                                       choices=varLod,
-                                                      selected="Ward",
+                                                      selected="LAD",
                                                       multiple=FALSE,
                                                       width="100%"
                                           ),
