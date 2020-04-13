@@ -18,13 +18,13 @@ load("data/maplsoa_sp.rda")
 
 # Level of Detail
 varLod <- c(
-  "LAD",
-  "Ward",
-  "MSOA",
-  "LSOA"
+  "Greater London"="LAD",
+  "Ward"="Ward",
+  "MSOA"="MSOA",
+  "LSOA"="LSOA"
 )
   
-# List of Borough, Ward
+# List of LAD
 varLad <- str_sort(unique(mapward_sp@data$lad_nm))
 # varWard <- unique(mapward_sp@data$ward_nm)
 
@@ -67,54 +67,43 @@ varMeasure1 <- c(
   "Age_65+"="age_65",
   "Avg_Age"="avg_age",
   "Area_sqkm"="area_sq_km",
-  "People_per_sqkm"="people_per_sq_km",
+  "People_per_sqkm"="people_per_sq_km"
+)
+
+# Measures2
+varMeasure2 <- c(
   "Overweight_4-5"="prevalence_overweight_reception",
   "Overweight_6-10"="prevalence_overweight_y6",
   "Obese_4-5"="prevalence_obese_reception",
   "Obese_6-10"="prevalence_obese_y6"
 )
 
-# Measures2
-varMeasure2 <- c(
-  "Weight"="weight",
-  "Volume"="volume",
-  "Fat"="fat",
-  "Saturate"="saturate",
-  "Salt"="salt",
-  "Sugar"="sugar",
-  "Protein"="protein",
-  "Carb"="carb",
-  "Fibre"="fibre",
-  "Alcohol"="alcohol",
-  "Energy_Fat"="energy_fat",
-  "Energy_Saturate"="energy_saturate",
-  "Energy_Sugar"="energy_sugar",
-  "Energy_Protein"="energy_protein",
-  "Energy_Carb"="energy_carb",
-  "Energy_Fibre"="energy_fibre",
-  "Energy_Alcohol"="energy_alcohol",
-  "Energy_Total"="energy_tot",
-  "Energy_Density"="energy_density",
-  "H_Nutrients_Weight"="h_nutrients_weight",
-  "H_Nutrients_Weight_Norm"="h_nutrients_weight_norm",
-  "H_Nutrients_Calories"="h_nutrients_calories",
-  "H_Nutrients_Calories_Norm"="h_nutrients_calories_norm",
-  "H_Items"="h_items",
-  "H_Items_Norm"="h_items_norm",
-  "H_Items_Weight"="h_items_weight",
-  "H_Items_Weight_Norm"="h_items_weight_norm",
-  "Representativeness"="representativeness_norm",
-  "Population"="population",
-  "Male"="male",
-  "Female"="female",
-  "Age_0-17"="age_0_17",
-  "Age_18-64"="age_18_64",
-  "Age_65+"="age_65",
-  "Avg_Age"="avg_age",
-  "Area_sqkm"="area_sq_km",
-  "People_per_sqkm"="people_per_sq_km"
+# GWR Model
+varGwrModel <- c(
+  "Basic GWR"="Basic GWR",
+  "Basic GWR-LCR"="Basic GWR-LCR",
+  "Generalised GWR"="Generalised GWR",
+  "Heteroskedastic GWR"="Heteroskedastic GWR",
+  "Minkovski GWR"="Minkovski GWR",
+  "Mixed GWR"="Mixed GWR",
+  "Robust GWR - Filtered"="Robust GWR - Filtered",
+  "Robust GWR - Downweight"="Robust GWR - Downweight"
 )
 
+# GWR Kernel
+varGwrKernel <- c(
+  "Gaussian"="gaussian",
+  "Exponential"="exponential",
+  "Bisquare"="bisquare",
+  "Tricube"="tricube",
+  "Boxcar"="boxcar"
+)
+
+# GWR Bandwidth
+varGwrBandwidth <- c(
+  "Fixed"="fixed",
+  "Adaptive"="adaptive"
+)
 
 # -----Define UI for random distribution app ----
 ui <- fluidPage(theme=shinytheme("cerulean"),
@@ -158,7 +147,7 @@ ui <- fluidPage(theme=shinytheme("cerulean"),
                                           ),
                                           conditionalPanel(condition="input.inLod!='LAD'",
                                           selectInput(inputId="inLad",
-                                                      label="Local Authority District",
+                                                      label="Select Local Authority District",
                                                       choices=varLad,
                                                       selected="Newham",
                                                       multiple=FALSE,
@@ -267,7 +256,49 @@ ui <- fluidPage(theme=shinytheme("cerulean"),
 # -----GWR Panel
                 tabPanel("GWR", value="gwr", fluid=TRUE, icon=icon("laptop-code"),
                          sidebarLayout(position="right", fluid=TRUE,
-                             sidebarPanel("GWR sidebarPanel", width=3, fluid=TRUE
+                             sidebarPanel(width=3, fluid=TRUE,
+                                          selectInput(inputId="inLod",
+                                                      label="Regression Level",
+                                                      choices=varLod,
+                                                      selected="LAD",
+                                                      multiple=FALSE,
+                                                      width="100%"
+                                          ),
+                                          selectInput(inputId="inY",
+                                                      label="Select Dependent Variable",
+                                                      choices=varMeasure2,
+                                                      selected=NULL,
+                                                      multiple=FALSE,
+                                                      width="100%"
+                                          ),
+                                          selectInput(inputId="inX",
+                                                      label="Select Independent Variable",
+                                                      choices=varMeasure1,
+                                                      selected=NULL,
+                                                      multiple=TRUE,
+                                                      width="100%"
+                                          ),
+                                          selectInput(inputId="inGwrModel",
+                                                      label="Select Regression Model",
+                                                      choices=varGwrModel,
+                                                      selected=NULL,
+                                                      multiple=FALSE,
+                                                      width="100%"
+                                          ),
+                                          selectInput(inputId="inGwrKernel",
+                                                      label="Select Kernel Method",
+                                                      choices=varGwrKernel,
+                                                      selected=NULL,
+                                                      multiple=FALSE,
+                                                      width="100%"
+                                          ),
+                                          selectInput(inputId="inGwrBandwidth",
+                                                      label="Select Bandwidth Method",
+                                                      choices=varGwrBandwidth,
+                                                      selected=NULL,
+                                                      multiple=FALSE,
+                                                      width="100%"
+                                          ),
                              ),
                              mainPanel("GWR mainPanel", width=9
                              )
@@ -364,11 +395,12 @@ server <- function(input, output, session) {
               midpoint=0,
               labels=legend,
               id="area_nm",
-              alpha=0.8
+              alpha=0.8,
+              legend.format=list(digits=2)
       ) +
       tm_borders(alpha=0.8
       ) +
-      tm_view(view.legend.position=c("right","bottom"),
+      tm_view(view.legend.position=c("right","top"),
               control.position=c("left","bottom"),
               colorNA="Black"
       ) +
@@ -419,11 +451,12 @@ server <- function(input, output, session) {
                 palette="RdBu",
                 midpoint=0,
                 id="area_nm",
-                alpha=0.8
+                alpha=0.8,
+                legend.format=list(digits=2)
         ) +
         tm_borders(alpha=0.8
         ) +
-        tm_view(view.legend.position=c("right","bottom"),
+        tm_view(view.legend.position=c("right","top"),
                 control.position=c("left","bottom"),
                 colorNA="Black"
         ) +
