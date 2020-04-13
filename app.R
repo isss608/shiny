@@ -86,8 +86,8 @@ varGwrModel <- c(
   "Heteroskedastic GWR"="Heteroskedastic GWR",
   "Minkovski GWR"="Minkovski GWR",
   "Mixed GWR"="Mixed GWR",
-  "Robust GWR - Filtered"="Robust GWR - Filtered",
-  "Robust GWR - Downweight"="Robust GWR - Downweight"
+  "Multiscale GWR"="Multiscale GWR",
+  "Robust GWR"="Robust GWR"
 )
 
 # GWR Kernel
@@ -272,7 +272,7 @@ ui <- fluidPage(theme=shinytheme("cerulean"),
                                                       width="100%"
                                           ),
                                           selectInput(inputId="inX",
-                                                      label="Select Independent Variable",
+                                                      label="Select Explanatory Variables",
                                                       choices=varMeasure1,
                                                       selected=NULL,
                                                       multiple=TRUE,
@@ -300,7 +300,83 @@ ui <- fluidPage(theme=shinytheme("cerulean"),
                                                       width="100%"
                                           ),
                              ),
-                             mainPanel("GWR mainPanel", width=9
+                             mainPanel("Please note that this tab is currently a mock up for discussion purposes only", width=9, fluid=TRUE,
+                                       fluidRow(
+                                         column(6,
+                                                tmapOutput("gwr1"),
+                                                selectInput(inputId="inReference",
+                                                            label="Reference Value",
+                                                            choices=c("Local R2"="r",
+                                                                      "Residuals"="i",
+                                                                      "P-Value"="p"
+                                                            ),
+                                                            selected="r",
+                                                            multiple=FALSE,
+                                                            width="100%"
+                                                ),
+                                                selectInput(inputId="inBinning",
+                                                            label="Binning Method",
+                                                            choices=c("Std Deviation"="sd",
+                                                                      "Equal"="equal",
+                                                                      "Pretty"="pretty",
+                                                                      "Quantile"="quantile",
+                                                                      "K-means"="kmeans",
+                                                                      "Hierarchical Cluster"="hclust",
+                                                                      "Binary Cluster"="bclust",
+                                                                      "Fisher"="fisher",
+                                                                      "Jenkins"="jenks",
+                                                                      "Log10"="log10_pretty"
+                                                            ),
+                                                            selected="quantile",
+                                                            multiple=FALSE,
+                                                            width="100%"
+                                                ),
+                                                sliderInput(inputId="inN",
+                                                            label="Select number of classes",
+                                                            min=2,
+                                                            max=10,
+                                                            value=5,
+                                                            width="100%"
+                                                )
+                                         ),
+                                         column(6,
+                                                tmapOutput("gwr2"),
+                                                selectInput(inputId="inReference",
+                                                            label="Reference Value",
+                                                            choices=c("Local R2"="r",
+                                                                      "Residuals"="i",
+                                                                      "P-Value"="p"
+                                                            ),
+                                                            selected="i",
+                                                            multiple=FALSE,
+                                                            width="100%"
+                                                ),
+                                                selectInput(inputId="inBinning",
+                                                            label="Binning Method",
+                                                            choices=c("Std Deviation"="sd",
+                                                                      "Equal"="equal",
+                                                                      "Pretty"="pretty",
+                                                                      "Quantile"="quantile",
+                                                                      "K-means"="kmeans",
+                                                                      "Hierarchical Cluster"="hclust",
+                                                                      "Binary Cluster"="bclust",
+                                                                      "Fisher"="fisher",
+                                                                      "Jenkins"="jenks",
+                                                                      "Log10"="log10_pretty"
+                                                            ),
+                                                            selected="quantile",
+                                                            multiple=FALSE,
+                                                            width="100%"
+                                                ),
+                                                sliderInput(inputId="inN",
+                                                            label="Select number of classes",
+                                                            min=2,
+                                                            max=10,
+                                                            value=5,
+                                                            width="100%"
+                                                )
+                                         )
+                                       )
                              )
                          )
                 )
@@ -503,7 +579,57 @@ observe({
 
 
 # -----GWR functions
+output$gwr1 <- renderTmap({
 
+  gwr1Plot <- tm_shape(mapward_sp) +
+    tm_fill("representativeness_norm",
+            title="Local R2",
+            style="quantile",
+            n=5,
+            palette="RdBu",
+            midpoint=0,
+            id="area_nm",
+            alpha=0.8,
+            legend.format=list(digits=2)
+    ) +
+    tm_borders(alpha=0.8
+    ) +
+    tm_view(view.legend.position=c("right","top"),
+            control.position=c("left","bottom"),
+            colorNA="Black"
+    ) +
+    tmap_options(basemaps=c("Esri.WorldGrayCanvas","Stamen.TonerLite","OpenStreetMap"),
+                 basemaps.alpha=c(0.8,0.5,0.7)
+    )
+#  tmap_leaflet(gwr1Plot, in.shiny=TRUE)
+  
+})
+
+output$gwr2 <- renderTmap({
+  
+  gwr1Plot <- tm_shape(mapward_sp) +
+    tm_fill("prevalence_overweight_reception",
+            title="Residuals",
+            style="quantile",
+            n=5,
+            palette="RdBu",
+            midpoint=0,
+            id="area_nm",
+            alpha=0.8,
+            legend.format=list(digits=2)
+    ) +
+    tm_borders(alpha=0.8
+    ) +
+    tm_view(view.legend.position=c("right","top"),
+            control.position=c("left","bottom"),
+            colorNA="Black"
+    ) +
+    tmap_options(basemaps=c("Esri.WorldGrayCanvas","Stamen.TonerLite","OpenStreetMap"),
+                 basemaps.alpha=c(0.8,0.5,0.7)
+    )
+  #  tmap_leaflet(gwr1Plot, in.shiny=TRUE)
+  
+})
 
 }
 
