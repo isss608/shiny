@@ -9,6 +9,7 @@ library(rgeos)
 
 
 # -----Load data files
+load("data/maprgn_sp.rda")
 load("data/maplad_sp.rda")
 load("data/mapward_sp.rda")
 load("data/mapmsoa_sp.rda")
@@ -19,15 +20,50 @@ load("data/maplsoa_sp.rda")
 
 # Level of Detail
 varLod <- c(
-  "Greater London"="LAD",
+  "Local Authority District"="LAD",
   "Ward"="Ward",
-  "MSOA"="MSOA",
-  "LSOA"="LSOA"
+  "Middle Super Output Area"="MSOA",
+  "Lower Super Output Area"="LSOA"
 )
   
 # List of LAD
-varLad <- str_sort(unique(mapward_sp@data$lad_nm))
-# varWard <- unique(mapward_sp@data$ward_nm)
+#varLad <- str_sort(unique(mapward_sp@data$lad_nm))
+varLad <- c(
+  "All",
+  "City of London",
+  "Barking and Dagenham",
+  "Barnet",
+  "Bexley",
+  "Brent",
+  "Bromley",
+  "Camden",
+  "Croydon",
+  "Ealing",
+  "Enfield",
+  "Greenwich",
+  "Hackney",
+  "Hammersmith and Fulham",
+  "Haringey",
+  "Harrow",
+  "Havering",
+  "Hillingdon",
+  "Hounslow",
+  "Islington",
+  "Kensington and Chelsea",
+  "Kingston upon Thames",
+  "Lambeth",
+  "Lewisham",
+  "Merton",
+  "Newham",
+  "Redbridge",
+  "Richmond upon Thames",
+  "Southwark",
+  "Sutton",
+  "Tower Hamlets",
+  "Waltham Forest",
+  "Wandsworth",
+  "Westminster"
+)
 
 # Choices for drop-downs
 # Measures1
@@ -106,11 +142,11 @@ varGwrBandwidth <- c(
   "Adaptive"="adaptive"
 )
 
-# -----Define UI for random distribution app ----
+# -----Define UI for app
 ui <- fluidPage(theme=shinytheme("cerulean"),
     
 # -----Navigation Bar
-    navbarPage("Tesco", fluid=TRUE, windowTitle="Tesco Grocery 1.0 Visual Analytics", selected="lisa",
+    navbarPage("Tesco", fluid=TRUE, windowTitle="Tesco Grocery 1.0 Visual Analytics", selected="esda",
                
 
 # -----Data Panel
@@ -135,33 +171,34 @@ ui <- fluidPage(theme=shinytheme("cerulean"),
                 ),
 
 
-# -----Lisa Panel
-                tabPanel("LISA", value="lisa", fluid=TRUE, icon=icon("globe-americas"),
+# -----ESDA Panel
+                tabPanel("ESDA", value="esda", fluid=TRUE, icon=icon("globe-americas"),
                          sidebarLayout(position="right", fluid=TRUE,
                              sidebarPanel(width=3, fluid=TRUE,
                                           selectInput(inputId="inLod",
-                                                      label="Level of Detail",
+                                                      label="Select Level of Detail",
                                                       choices=varLod,
                                                       selected="LAD",
                                                       multiple=FALSE,
                                                       width="100%"
                                           ),
+                                          selectInput(inputId="inMeasure",
+                                                      label="Select Variable",
+                                                      choices=varMeasure1,
+                                                      selected="energy_carb",
+                                                      multiple=FALSE,
+                                                      width="100%"
+                                          ),
                                           conditionalPanel(condition="input.inLod!='LAD'",
                                           selectInput(inputId="inLad",
-                                                      label="Select Local Authority District",
+                                                      label="Select Local Authority District to focus",
                                                       choices=varLad,
-                                                      selected="Newham",
+                                                      selected="All",
                                                       multiple=FALSE,
                                                       width="100%"
                                           )
                                           ),
-                                            selectInput(inputId="inMeasure",
-                                                        label="Measure",
-                                                        choices=varMeasure1,
-                                                        selected="energy_carb",
-                                                        multiple=FALSE,
-                                                        width="100%"
-                                            ),
+                                          leafletOutput("subsetView", width=200, height=200)
                              ),
                              mainPanel(width=9,
                                        fluidRow(
@@ -193,8 +230,8 @@ ui <- fluidPage(theme=shinytheme("cerulean"),
                                                 conditionalPanel(condition="input.inLisaMethod=='knn'",
                                                                  sliderInput(inputId="k",
                                                                              label="Select K",
-                                                                             min=1,
-                                                                             max=10,
+                                                                             min=2,
+                                                                             max=30,
                                                                              value=3,
                                                                              width="100%"
                                                                  )
@@ -208,33 +245,35 @@ ui <- fluidPage(theme=shinytheme("cerulean"),
                                                                       "Local Moran's I"="i",
                                                                       "P-Value"="p"
                                                             ),
-                                                            selected="r",
+                                                            selected="p",
                                                             multiple=FALSE,
                                                             width="100%"
                                                 ),
-                                                selectInput(inputId="inBinning",
-                                                            label="Binning Method",
-                                                            choices=c("Std Deviation"="sd",
-                                                                      "Equal"="equal",
-                                                                      "Pretty"="pretty",
-                                                                      "Quantile"="quantile",
-                                                                      "K-means"="kmeans",
-                                                                      "Hierarchical Cluster"="hclust",
-                                                                      "Binary Cluster"="bclust",
-                                                                      "Fisher"="fisher",
-                                                                      "Jenkins"="jenks",
-                                                                      "Log10"="log10_pretty"
-                                                            ),
-                                                            selected="quantile",
-                                                            multiple=FALSE,
-                                                            width="100%"
-                                                ),
-                                                sliderInput(inputId="inN",
-                                                            label="Select number of classes",
-                                                            min=2,
-                                                            max=10,
-                                                            value=5,
-                                                            width="100%"
+                                                conditionalPanel(condition="input.inReference!='p'",
+                                                                 selectInput(inputId="inBinning",
+                                                                             label="Binning Method",
+                                                                             choices=c("Std Deviation"="sd",
+                                                                                       "Equal"="equal",
+                                                                                       "Pretty"="pretty",
+                                                                                       "Quantile"="quantile",
+                                                                                       "K-means Cluster"="kmeans",
+                                                                                       "Hierarchical Cluster"="hclust",
+                                                                                       "Bagged Cluster"="bclust",
+                                                                                       "Fisher"="fisher",
+                                                                                       "Jenks"="jenks",
+                                                                                       "Log10 Pretty"="log10_pretty"
+                                                                             ),
+                                                                             selected="quantile",
+                                                                             multiple=FALSE,
+                                                                             width="100%"
+                                                                 ),
+                                                                 sliderInput(inputId="inN",
+                                                                             label="Select number of classes",
+                                                                             min=2,
+                                                                             max=10,
+                                                                             value=5,
+                                                                             width="100%"
+                                                                 )
                                                 )
                                          )
                                        )
@@ -321,12 +360,12 @@ ui <- fluidPage(theme=shinytheme("cerulean"),
                                                                       "Equal"="equal",
                                                                       "Pretty"="pretty",
                                                                       "Quantile"="quantile",
-                                                                      "K-means"="kmeans",
+                                                                      "K-means Cluster"="kmeans",
                                                                       "Hierarchical Cluster"="hclust",
-                                                                      "Binary Cluster"="bclust",
+                                                                      "Bagged Cluster"="bclust",
                                                                       "Fisher"="fisher",
-                                                                      "Jenkins"="jenks",
-                                                                      "Log10"="log10_pretty"
+                                                                      "Jenks"="jenks",
+                                                                      "Log10 Pretty"="log10_pretty"
                                                             ),
                                                             selected="quantile",
                                                             multiple=FALSE,
@@ -358,12 +397,12 @@ ui <- fluidPage(theme=shinytheme("cerulean"),
                                                                       "Equal"="equal",
                                                                       "Pretty"="pretty",
                                                                       "Quantile"="quantile",
-                                                                      "K-means"="kmeans",
+                                                                      "K-means Cluster"="kmeans",
                                                                       "Hierarchical Cluster"="hclust",
-                                                                      "Binary Cluster"="bclust",
+                                                                      "Bagged Cluster"="bclust",
                                                                       "Fisher"="fisher",
-                                                                      "Jenkins"="jenks",
-                                                                      "Log10"="log10_pretty"
+                                                                      "Jenks"="jenks",
+                                                                      "Log10 Pretty"="log10_pretty"
                                                             ),
                                                             selected="quantile",
                                                             multiple=FALSE,
@@ -402,26 +441,52 @@ server <- function(input, output, session) {
 # -----EDA functions
 
   
-# -----Lisa functions
+# -----ESDA functions
+  legend <- c("insignificant","low-low", "low-high", "high-low", "high-high")
+  #colors <- c("white","blue","sky-blue","darkpink","red")
+  colorsRd <- c("#ffffff","#fcae91","#fb6a4a","#de2d26","#a50f15")
+  colorsBu <- c("#ffffff","#bdd7e7","#6baed6","#3182bd","#08519c")
+  colorsNBu <- c("#08519c","#3182bd","#6baed6","#bdd7e7","#ffffff")
+  colorsLi <- c("#ffffff","#08519c","#6baed6","#fb6a4a","#a50f15")
+  
   output$lisa <- renderLeaflet({
     
     if (input$inLod=="LAD") {
     subset <- maplad_sp
     indicator <- pull(subset@data, input$inMeasure)
+    subsetView <- maprgn_sp
     }
     else if (input$inLod=="Ward") {
-      subset <- mapward_sp[mapward_sp$lad_nm==input$inLad,] 
+      subset <- mapward_sp
       indicator <- pull(subset@data, input$inMeasure)
+      if (input$inLad=="All") {
+        subsetView <- maprgn_sp
+      }
+      else {
+        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,]
+      }
     }
     else if (input$inLod=="MSOA") {
-      subset <- mapmsoa_sp[mapmsoa_sp$lad_nm==input$inLad,] 
+      subset <- mapmsoa_sp
       indicator <- pull(subset@data, input$inMeasure)
+      if (input$inLad=="All") {
+        subsetView <- maprgn_sp
+      }
+      else {
+        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,]
+      }
     }
     else {
-      subset <- maplsoa_sp[maplsoa_sp$lad_nm==input$inLad,] 
+      subset <- maplsoa_sp
       indicator <- pull(subset@data, input$inMeasure)
+      if (input$inLad=="All") {
+        subsetView <- maprgn_sp
+      }
+      else {
+        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,]
+      }
     }
-    
+
     if (input$inLisaMethod=="q") {
       wm <- poly2nb(subset, queen=TRUE)
       rswm <- nb2listw(wm, zero.policy=TRUE)
@@ -448,7 +513,7 @@ server <- function(input, output, session) {
     }
     
     rv$lmoran <- localmoran(indicator, rswm)
-    
+
     quadrant <- vector(mode = "numeric", length = nrow(rv$lmoran))
     DV <- indicator - mean(indicator)
     C_mI <- rv$lmoran[,1] - mean(rv$lmoran[,1])
@@ -461,14 +526,11 @@ server <- function(input, output, session) {
     
     subset$quadrant <- quadrant
     
-    legend <- c("insignificant","low-low", "low-high", "high-low", "high-high")
-    colors <- c("#FFFFFF","#5691C0","#CBE0EB","#F3BFA6","#CA5D5E")
-    
     lisaPlot <- tm_shape(subset) +
       tm_fill("quadrant",
               title="LISA Cluster",
               style="cat",
-              palette=colors,
+              palette=colorsLi,
               midpoint=0,
               labels=legend,
               id="area_nm",
@@ -483,7 +545,10 @@ server <- function(input, output, session) {
       ) +
       tmap_options(basemaps=c("Esri.WorldGrayCanvas","Stamen.TonerLite","OpenStreetMap"),
                    basemaps.alpha=c(0.8,0.5,0.7)
-      )
+      ) +
+      tm_shape(subsetView) +
+      tm_borders(col="black",
+                 lwd=3)
     tmap_leaflet(lisaPlot, in.shiny=TRUE)
     
   })
@@ -493,43 +558,69 @@ server <- function(input, output, session) {
     if (input$inLod=="LAD") {
       subset <- maplad_sp
       refDf <- cbind(subset, rv$lmoran)
+      subsetView <- maprgn_sp
     }
     else if (input$inLod=="Ward") {
-      subset <- mapward_sp[mapward_sp$lad_nm==input$inLad,] 
+      subset <- mapward_sp
       refDf <- cbind(subset, rv$lmoran)
+      if (input$inLad=="All") {
+        subsetView <- maprgn_sp
+      }
+      else {
+        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,]
+      }
     }
     else if (input$inLod=="MSOA") {
-      subset <- mapmsoa_sp[mapmsoa_sp$lad_nm==input$inLad,] 
+      subset <- mapmsoa_sp
       refDf <- cbind(subset, rv$lmoran)
+      if (input$inLad=="All") {
+        subsetView <- maprgn_sp
+      }
+      else {
+        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,]
+      }
     }
     else {
-      subset <- maplsoa_sp[maplsoa_sp$lad_nm==input$inLad,] 
+      subset <- maplsoa_sp
       refDf <- cbind(subset, rv$lmoran)
+      if (input$inLad=="All") {
+        subsetView <- maprgn_sp
+      }
+      else {
+        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,]
+      }
     }
 
     if (input$inReference=="r"){
       tmFill <- input$inMeasure
       tmTitle <- "Raw Values"
+      tmStyle <- input$inBinning
+      tmPalette <- "RdBu"
     }
     else if (input$inReference=="i"){
       tmFill <- "Ii"
       tmTitle <- "I-Values"
+      tmStyle <- input$inBinning
+      tmPalette <- "RdBu"
     }
     else {
       tmFill <- "Pr.z...0."
       tmTitle <- "P-Values"
+      tmStyle <- "fixed"
+      tmPalette <- colorsNBu
     }
     
       refPlot <- tm_shape(refDf) +
         tm_fill(tmFill,
                 title=tmTitle,
-                style=input$inBinning,
+                style=tmStyle,
                 n=input$inN,
-                palette="RdBu",
+                breaks=c(0,0.001,0.01,0.05,0.1,1),
+                palette=tmPalette,
                 midpoint=0,
                 id="area_nm",
                 alpha=0.8,
-                legend.format=list(digits=2)
+                legend.format=list(digits=3)
         ) +
         tm_borders(alpha=0.8
         ) +
@@ -539,44 +630,98 @@ server <- function(input, output, session) {
         ) +
         tmap_options(basemaps=c("Esri.WorldGrayCanvas","Stamen.TonerLite","OpenStreetMap"),
                      basemaps.alpha=c(0.8,0.5,0.7)
-        )
+        ) +
+        tm_shape(subsetView) +
+        tm_borders(col="black",
+          lwd=3)
       tmap_leaflet(refPlot, in.shiny=TRUE)
 
   })
 
+  output$subsetView <- renderLeaflet({
 
-# observe({input$inLod
-#   if (input$inLod!="LSOA") {
-#     updateSelectInput(session, input$inMeasure, choices=varMeasure1,
-#                       selected="energy_carb")
-#   }
-#   else {
-#     updateSelectInput(session, input$inMeasure, choices=varMeasure2,
-#                       selected="energy_carb")
-#   }
-# }, priority=1)
+    if (input$inLod=="LAD") {
+      subsetView <- maprgn_sp
+    }
+    else if (input$inLod=="Ward") {
+      if (input$inLad=="All") {
+        subsetView <- maprgn_sp
+      }
+      else {
+        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,]
+      }
+    }
+    else if (input$inLod=="MSOA") {
+      if (input$inLad=="All") {
+        subsetView <- maprgn_sp
+      }
+      else {
+        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,]
+      }
+    }
+    else {
+      if (input$inLad=="All") {
+        subsetView <- maprgn_sp
+      }
+      else {
+        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,]
+      }
+    }
+
+    subsetViewPlot <- tm_shape(subsetView) +
+      tm_fill(col="#ffffff",
+              id="area_nm",
+              labels="area_nm",
+              legend.show=FALSE
+      ) +
+      tm_borders(lwd=2
+      ) +
+      tm_view(view.legend.position=c("right","top"),
+              control.position=c("left","bottom"),
+              colorNA="Black",
+              basemaps=NULL
+      )
+    tmap_leaflet(subsetViewPlot, in.shiny=TRUE)
+  })
+
 
 observe({
   coords1 <- input$lisa_bounds
   if (!is.null(coords1)) {
     leafletProxy("reference") %>% 
-      fitBounds(coords1$west,
+      flyToBounds(coords1$west,
                 coords1$south,
                 coords1$east,
                 coords1$north)
   }
-}, priority=1)
+}, priority=3)
 
 observe({
   coords2 <- input$reference_bounds
   if (!is.null(coords2)) {
     leafletProxy("lisa") %>% 
-      fitBounds(coords2$west,
+      flyToBounds(coords2$west,
                 coords2$south,
                 coords2$east,
                 coords2$north)
   }
 }, priority=3)
+
+observe({
+  coords3 <- input$subsetView_bounds
+  if (!is.null(coords3)) {
+    leafletProxy("reference") %>%
+      fitBounds(coords3$west,
+                  coords3$south,
+                  coords3$east,
+                  coords3$north)
+    leafletProxy("lisa") %>%
+      fitBounds(coords3$west,
+                  coords3$south,
+                  coords3$east,
+                  coords3$north)
+  }
+}, priority=1)
 
 
 # -----GWR functions
