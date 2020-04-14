@@ -7,6 +7,7 @@ library(tmap)
 library(spdep)
 library(rgeos)
 
+
 # -----Load data files
 load("data/maplad_sp.rda")
 load("data/mapward_sp.rda")
