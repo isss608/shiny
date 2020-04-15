@@ -452,38 +452,38 @@ server <- function(input, output, session) {
   output$lisa <- renderLeaflet({
     
     if (input$inLod=="LAD") {
-    subset <- maplad_sp
-    indicator <- pull(subset@data, input$inMeasure)
+    subset <- maplad_sp[,"area_nm"]
+    indicator <- pull(maplad_sp@data, input$inMeasure)
     subsetView <- maprgn_sp
     }
     else if (input$inLod=="Ward") {
-      subset <- mapward_sp
-      indicator <- pull(subset@data, input$inMeasure)
+      subset <- mapward_sp[,"area_nm"]
+      indicator <- pull(mapward_sp@data, input$inMeasure)
       if (input$inLad=="All") {
         subsetView <- maprgn_sp
       }
       else {
-        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,]
+        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
       }
     }
     else if (input$inLod=="MSOA") {
-      subset <- mapmsoa_sp
-      indicator <- pull(subset@data, input$inMeasure)
+      subset <- mapmsoa_sp[,"area_nm"]
+      indicator <- pull(mapmsoa_sp@data, input$inMeasure)
       if (input$inLad=="All") {
         subsetView <- maprgn_sp
       }
       else {
-        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,]
+        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
       }
     }
     else {
-      subset <- maplsoa_sp
-      indicator <- pull(subset@data, input$inMeasure)
+      subset <- maplsoa_sp[,"area_nm"]
+      indicator <- pull(maplsoa_sp@data, input$inMeasure)
       if (input$inLad=="All") {
         subsetView <- maprgn_sp
       }
       else {
-        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,]
+        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
       }
     }
 
@@ -556,38 +556,38 @@ server <- function(input, output, session) {
   output$reference <- renderLeaflet({
     
     if (input$inLod=="LAD") {
-      subset <- maplad_sp
+      subset <- maplad_sp[,"area_nm"]
       refDf <- cbind(subset, rv$lmoran)
       subsetView <- maprgn_sp
     }
     else if (input$inLod=="Ward") {
-      subset <- mapward_sp
+      subset <- mapward_sp[,"area_nm"]
       refDf <- cbind(subset, rv$lmoran)
       if (input$inLad=="All") {
         subsetView <- maprgn_sp
       }
       else {
-        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,]
+        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
       }
     }
     else if (input$inLod=="MSOA") {
-      subset <- mapmsoa_sp
+      subset <- mapmsoa_sp[,"area_nm"]
       refDf <- cbind(subset, rv$lmoran)
       if (input$inLad=="All") {
         subsetView <- maprgn_sp
       }
       else {
-        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,]
+        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
       }
     }
     else {
-      subset <- maplsoa_sp
+      subset <- maplsoa_sp[,"area_nm"]
       refDf <- cbind(subset, rv$lmoran)
       if (input$inLad=="All") {
         subsetView <- maprgn_sp
       }
       else {
-        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,]
+        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
       }
     }
 
@@ -648,7 +648,7 @@ server <- function(input, output, session) {
         subsetView <- maprgn_sp
       }
       else {
-        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,]
+        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
       }
     }
     else if (input$inLod=="MSOA") {
@@ -656,7 +656,7 @@ server <- function(input, output, session) {
         subsetView <- maprgn_sp
       }
       else {
-        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,]
+        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
       }
     }
     else {
@@ -664,7 +664,7 @@ server <- function(input, output, session) {
         subsetView <- maprgn_sp
       }
       else {
-        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,]
+        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
       }
     }
 
