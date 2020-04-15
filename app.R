@@ -556,12 +556,12 @@ server <- function(input, output, session) {
   output$reference <- renderLeaflet({
     
     if (input$inLod=="LAD") {
-      subset <- maplad_sp[,"area_nm"]
+      subset <- maplad_sp[,c("area_nm",input$inMeasure)]
       refDf <- cbind(subset, rv$lmoran)
       subsetView <- maprgn_sp
     }
     else if (input$inLod=="Ward") {
-      subset <- mapward_sp[,"area_nm"]
+      subset <- mapward_sp[,c("area_nm",input$inMeasure)]
       refDf <- cbind(subset, rv$lmoran)
       if (input$inLad=="All") {
         subsetView <- maprgn_sp
@@ -571,7 +571,7 @@ server <- function(input, output, session) {
       }
     }
     else if (input$inLod=="MSOA") {
-      subset <- mapmsoa_sp[,"area_nm"]
+      subset <- mapmsoa_sp[,c("area_nm",input$inMeasure)]
       refDf <- cbind(subset, rv$lmoran)
       if (input$inLad=="All") {
         subsetView <- maprgn_sp
@@ -581,7 +581,7 @@ server <- function(input, output, session) {
       }
     }
     else {
-      subset <- maplsoa_sp[,"area_nm"]
+      subset <- maplsoa_sp[,c("area_nm",input$inMeasure)]
       refDf <- cbind(subset, rv$lmoran)
       if (input$inLad=="All") {
         subsetView <- maprgn_sp
