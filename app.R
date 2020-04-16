@@ -6,6 +6,11 @@ library(leaflet)
 library(tmap)
 library(spdep)
 library(rgeos)
+library(sf)
+library(sp)
+library(spdep)
+library(rgdal)
+library(GWmodel)
 
 
 # -----Load data files
@@ -14,6 +19,8 @@ load("data/maplad_sp.rda")
 load("data/mapward_sp.rda")
 load("data/mapmsoa_sp.rda")
 load("data/maplsoa_sp.rda")
+load("data/ladbbox.rda")
+load("data/mapmsoa_sf.rda")
 
 
 # -----All Global Parameters here
@@ -115,16 +122,23 @@ varMeasure2 <- c(
   "Obese_6-10"="prevalence_obese_y6"
 )
 
+# GWR Level of Detail
+varGwrLod <- c(
+  "Local Authority District"="LAD",
+  "Ward"="Ward",
+  "Middle Super Output Area"="MSOA"
+)
+
 # GWR Model
 varGwrModel <- c(
-  "Basic GWR"="Basic GWR",
-  "Basic GWR-LCR"="Basic GWR-LCR",
-  "Generalised GWR"="Generalised GWR",
-  "Heteroskedastic GWR"="Heteroskedastic GWR",
-  "Minkovski GWR"="Minkovski GWR",
-  "Mixed GWR"="Mixed GWR",
-  "Multiscale GWR"="Multiscale GWR",
-  "Robust GWR"="Robust GWR"
+  "Basic GWR"="gwr",
+  "Generalised GWR"="ggwr"
+)
+
+# GWR Approach
+varGwrApproach <- c(
+  "CV"="CV",
+  "AIC"="AIC"
 )
 
 # GWR Kernel
@@ -138,15 +152,21 @@ varGwrKernel <- c(
 
 # GWR Bandwidth
 varGwrBandwidth <- c(
-  "Fixed"="fixed",
-  "Adaptive"="adaptive"
+  "Fixed"=FALSE,
+  "Adaptive"=TRUE
+)
+
+# GWR Distance
+varGwrDistance <- c(
+  "Euclidean"=2,
+  "Manhattan"=1
 )
 
 # -----Define UI for app
 ui <- fluidPage(theme=shinytheme("cerulean"),
     
 # -----Navigation Bar
-    navbarPage("Tesco", fluid=TRUE, windowTitle="Tesco Grocery 1.0 Visual Analytics", selected="esda",
+    navbarPage("Tesco", fluid=TRUE, windowTitle="Tesco Grocery 1.0 Visual Analytics", selected="gwr",
                
 
 # -----Data Panel
@@ -176,7 +196,7 @@ ui <- fluidPage(theme=shinytheme("cerulean"),
                          sidebarLayout(position="right", fluid=TRUE,
                              sidebarPanel(width=3, fluid=TRUE,
                                           selectInput(inputId="inLod",
-                                                      label="Select Level of Detail",
+                                                      label="Level of Detail",
                                                       choices=varLod,
                                                       selected="LAD",
                                                       multiple=FALSE,
@@ -191,14 +211,13 @@ ui <- fluidPage(theme=shinytheme("cerulean"),
                                           ),
                                           conditionalPanel(condition="input.inLod!='LAD'",
                                           selectInput(inputId="inLad",
-                                                      label="Select Local Authority District to focus",
+                                                      label="Local Authority District",
                                                       choices=varLad,
                                                       selected="All",
                                                       multiple=FALSE,
                                                       width="100%"
                                           )
-                                          ),
-                                          leafletOutput("subsetView", width=200, height=200)
+                                          )
                              ),
                              mainPanel(width=9,
                                        fluidRow(
@@ -297,54 +316,68 @@ ui <- fluidPage(theme=shinytheme("cerulean"),
                 tabPanel("GWR", value="gwr", fluid=TRUE, icon=icon("laptop-code"),
                          sidebarLayout(position="right", fluid=TRUE,
                              sidebarPanel(width=3, fluid=TRUE,
-                                          selectInput(inputId="inLod",
+                                          selectInput(inputId="GwrLod",
                                                       label="Regression Level",
-                                                      choices=varLod,
-                                                      selected="LAD",
+                                                      choices=varGwrLod,
+                                                      selected="MSOA",
                                                       multiple=FALSE,
                                                       width="100%"
                                           ),
-                                          selectInput(inputId="inY",
-                                                      label="Select Dependent Variable",
+                                          selectInput(inputId="GwrY",
+                                                      label="Dependent Variable",
                                                       choices=varMeasure2,
-                                                      selected=NULL,
+                                                      selected="prevalence_obese_y6",
                                                       multiple=FALSE,
                                                       width="100%"
                                           ),
-                                          selectInput(inputId="inX",
-                                                      label="Select Explanatory Variables",
+                                          selectInput(inputId="GwrX",
+                                                      label="Explanatory Variables",
                                                       choices=varMeasure1,
-                                                      selected=NULL,
+                                                      selected="energy_carb",
                                                       multiple=TRUE,
                                                       width="100%"
                                           ),
-                                          selectInput(inputId="inGwrModel",
-                                                      label="Select Regression Model",
+                                          selectInput(inputId="GwrModel",
+                                                      label="Regression Model",
                                                       choices=varGwrModel,
                                                       selected=NULL,
                                                       multiple=FALSE,
                                                       width="100%"
                                           ),
-                                          selectInput(inputId="inGwrKernel",
+                                          selectInput(inputId="GwrApproach",
+                                                      label="Regression Approach",
+                                                      choices=varGwrApproach,
+                                                      selected="CV",
+                                                      multiple=FALSE,
+                                                      width="100%"
+                                          ),
+                                          selectInput(inputId="GwrKernel",
                                                       label="Select Kernel Method",
                                                       choices=varGwrKernel,
-                                                      selected=NULL,
+                                                      selected="gaussian",
                                                       multiple=FALSE,
                                                       width="100%"
                                           ),
-                                          selectInput(inputId="inGwrBandwidth",
-                                                      label="Select Bandwidth Method",
+                                          selectInput(inputId="GwrBandwidth",
+                                                      label="Bandwidth Method",
                                                       choices=varGwrBandwidth,
-                                                      selected=NULL,
+                                                      selected=FALSE,
                                                       multiple=FALSE,
                                                       width="100%"
                                           ),
+                                          selectInput(inputId="GwrDistance",
+                                                      label="Distance Method",
+                                                      choices=varGwrDistance,
+                                                      selected=2,
+                                                      multiple=FALSE,
+                                                      width="100%"
+                                          )
                              ),
-                             mainPanel("Please note that this tab is currently a mock up for discussion purposes only", width=9, fluid=TRUE,
+                             mainPanel(width=9, fluid=TRUE,
                                        fluidRow(
                                          column(6,
-                                                tmapOutput("gwr1"),
-                                                selectInput(inputId="inReference",
+                                                leafletOutput("gwr1"),
+                                                selectInput(inputId="Gwr1Reference",
                                                             label="Reference Value",
                                                             choices=c("Local R2"="r",
                                                                       "Residuals"="i",
@@ -354,7 +387,7 @@ ui <- fluidPage(theme=shinytheme("cerulean"),
                                                             multiple=FALSE,
                                                             width="100%"
                                                 ),
-                                                selectInput(inputId="inBinning",
+                                                selectInput(inputId="Gwr1Binning",
                                                             label="Binning Method",
                                                             choices=c("Std Deviation"="sd",
                                                                       "Equal"="equal",
@@ -371,27 +404,29 @@ ui <- fluidPage(theme=shinytheme("cerulean"),
                                                             multiple=FALSE,
                                                             width="100%"
                                                 ),
-                                                sliderInput(inputId="inN",
+                                                sliderInput(inputId="Gwr1N",
                                                             label="Select number of classes",
                                                             min=2,
                                                             max=10,
                                                             value=5,
                                                             width="100%"
-                                                )
+                                                ),
+                                                verbatimTextOutput("text1")
                                          ),
                                          column(6,
-                                                tmapOutput("gwr2"),
-                                                selectInput(inputId="inReference",
+                                                leafletOutput("gwr2"),
+                                                selectInput(inputId="Gwr2Reference",
                                                             label="Reference Value",
-                                                            choices=c("Local R2"="r",
-                                                                      "Residuals"="i",
-                                                                      "P-Value"="p"
+                                                            choices=c("P-Value"="p",
+                                                                      "Local R2"="r",
+                                                                      "Residuals"="i"
+                                                                      
                                                             ),
-                                                            selected="i",
+                                                            selected="p",
                                                             multiple=FALSE,
                                                             width="100%"
                                                 ),
-                                                selectInput(inputId="inBinning",
+                                                selectInput(inputId="Gwr2Binning",
                                                             label="Binning Method",
                                                             choices=c("Std Deviation"="sd",
                                                                       "Equal"="equal",
@@ -408,7 +443,7 @@ ui <- fluidPage(theme=shinytheme("cerulean"),
                                                             multiple=FALSE,
                                                             width="100%"
                                                 ),
-                                                sliderInput(inputId="inN",
+                                                sliderInput(inputId="Gwr2N",
                                                             label="Select number of classes",
                                                             min=2,
                                                             max=10,
@@ -638,58 +673,12 @@ server <- function(input, output, session) {
 
   })
 
-  output$subsetView <- renderLeaflet({
-
-    if (input$inLod=="LAD") {
-      subsetView <- maprgn_sp
-    }
-    else if (input$inLod=="Ward") {
-      if (input$inLad=="All") {
-        subsetView <- maprgn_sp
-      }
-      else {
-        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
-      }
-    }
-    else if (input$inLod=="MSOA") {
-      if (input$inLad=="All") {
-        subsetView <- maprgn_sp
-      }
-      else {
-        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
-      }
-    }
-    else {
-      if (input$inLad=="All") {
-        subsetView <- maprgn_sp
-      }
-      else {
-        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
-      }
-    }
-
-    subsetViewPlot <- tm_shape(subsetView) +
-      tm_fill(col="#ffffff",
-              id="area_nm",
-              labels="area_nm",
-              legend.show=FALSE
-      ) +
-      tm_borders(lwd=2
-      ) +
-      tm_view(view.legend.position=c("right","top"),
-              control.position=c("left","bottom"),
-              colorNA="Black",
-              basemaps=NULL
-      )
-    tmap_leaflet(subsetViewPlot, in.shiny=TRUE)
-  })
-
 
 observe({
   coords1 <- input$lisa_bounds
   if (!is.null(coords1)) {
     leafletProxy("reference") %>% 
-      flyToBounds(coords1$west,
+      fitBounds(coords1$west,
                 coords1$south,
                 coords1$east,
                 coords1$north)
@@ -700,7 +689,7 @@ observe({
   coords2 <- input$reference_bounds
   if (!is.null(coords2)) {
     leafletProxy("lisa") %>% 
-      flyToBounds(coords2$west,
+      fitBounds(coords2$west,
                 coords2$south,
                 coords2$east,
                 coords2$north)
@@ -708,35 +697,97 @@ observe({
 }, priority=3)
 
 observe({
-  coords3 <- input$subsetView_bounds
+  coords3 <- ladbbox[ladbbox$area_nm==input$inLad,c("xmin","ymin","xmax","ymax")]
   if (!is.null(coords3)) {
     leafletProxy("reference") %>%
-      fitBounds(coords3$west,
-                  coords3$south,
-                  coords3$east,
-                  coords3$north)
+      fitBounds(coords3$xmin,
+                  coords3$ymin,
+                  coords3$xmax,
+                  coords3$ymax)
     leafletProxy("lisa") %>%
-      fitBounds(coords3$west,
-                  coords3$south,
-                  coords3$east,
-                  coords3$north)
+      fitBounds(coords3$xmin,
+                  coords3$ymin,
+                  coords3$xmax,
+                  coords3$ymax)
   }
 }, priority=1)
 
 
 # -----GWR functions
-output$gwr1 <- renderTmap({
+output$gwr1 <- renderLeaflet({
+  
+  if (input$GwrLod=="LAD") {
+    
+  }
+  else if (input$GwrLod=="Ward") {
+    
+  }
+  else {
+    GwrDataSp <- mapmsoa_sp
+    GwrDataSf <- mapmsoa_sf
+    Gwr1Title <- "Fixed Title"
+    
+  }
+  
+  GwrFormula <- as.formula(paste(input$GwrY,paste(input$GwrX, collapse="+"), sep="~"))
+  GwrBw <- bw.gwr(GwrFormula, data=GwrDataSp, approach=input$GwrApproach, kernel=input$GwrKernel, adaptive=input$GwrBandwidth, p=input$GwrDistance, longlat=FALSE)
+  Gwr <- gwr.basic(GwrFormula, data=GwrDataSp, bw=GwrBw, kernel=input$GwrKernel, adaptive=input$GwrBandwidth, p=input$GwrDistance, longlat=FALSE)
+  Gwr.output <- as.data.frame(Gwr$SDF)
+  Gwr.sf <- cbind(GwrDataSf, as.matrix(Gwr.output))
+  
+  # bw.fixed <- bw.gwr(formula = prevalence_obese_y6 ~ energy_carb + h_nutrients_calories, data=mapmsoa_sp, approach="CV", kernel="gaussian", adaptive=FALSE, longlat=FALSE)
+  # gwr.fixed <- gwr.basic(formula = prevalence_obese_y6 ~ energy_carb + h_nutrients_calories, data=mapmsoa_sp, bw=bw.fixed, kernel = 'gaussian', longlat = FALSE)
+  # bw.adaptive <- bw.gwr(formula = prevalence_obese_y6 ~ energy_carb + h_nutrients_calories, data=mapmsoa_sp, approach="CV", kernel="gaussian", adaptive=TRUE, longlat=FALSE)
+  # gwr.adaptive <- gwr.basic(formula = prevalence_obese_y6 ~ energy_carb + h_nutrients_calories, data=mapmsoa_sp, bw=bw.adaptive, kernel = 'gaussian', adaptive=TRUE, longlat = FALSE)
+  # gwr.adaptive.output <- as.data.frame(gwr.adaptive$SDF)
+  # mapmsoa_sf.adaptive <- cbind(mapmsoa_sf, as.matrix(gwr.adaptive.output))
+  
 
-  gwr1Plot <- tm_shape(mapward_sp) +
+  gwr1Plot <- tm_shape(Gwr.sf) +
+    tm_fill("Local_R2",
+            title=Gwr1Title,
+            style=input$Gwr1Binning,
+            n=input$Gwr1N,
+            breaks=c(0,0.001,0.01,0.05,0.1,1),
+            palette=colorsBu,
+            midpoint=0,
+            id="area_nm",
+            alpha=0.8,
+            legend.format=list(digits=3)
+    ) +
+    tm_borders(alpha=0.8
+    ) +
+    tm_view(view.legend.position=c("right","top"),
+            control.position=c("left","bottom"),
+            colorNA="Black"
+    ) +
+    tmap_options(basemaps=c("Esri.WorldGrayCanvas","Stamen.TonerLite","OpenStreetMap"),
+                 basemaps.alpha=c(0.8,0.5,0.7)
+    ) 
+    # tm_shape(subsetView) +
+    # tm_borders(col="black",
+    #            lwd=3)
+  tmap_leaflet(gwr1Plot, in.shiny=TRUE)
+  
+  # output$text1 <- renderPrint({
+  #   print(GwrFormula)
+  # })
+  
+})
+
+output$gwr2 <- renderLeaflet({
+  
+  gwr2Plot <- tm_shape(mapmsoa_sp) +
     tm_fill("representativeness_norm",
-            title="Local R2",
-            style="quantile",
+            title="P-value",
+            style="fixed",
             n=5,
-            palette="RdBu",
+            breaks=c(0,0.001,0.01,0.05,0.1,1),
+            palette=colorsNBu,
             midpoint=0,
             id="area_nm",
             alpha=0.8,
-            legend.format=list(digits=2)
+            legend.format=list(digits=3)
     ) +
     tm_borders(alpha=0.8
     ) +
@@ -746,36 +797,14 @@ output$gwr1 <- renderTmap({
     ) +
     tmap_options(basemaps=c("Esri.WorldGrayCanvas","Stamen.TonerLite","OpenStreetMap"),
                  basemaps.alpha=c(0.8,0.5,0.7)
-    )
-#  tmap_leaflet(gwr1Plot, in.shiny=TRUE)
+    ) 
+    # tm_shape(subsetView) +
+    # tm_borders(col="black",
+    #            lwd=3)
+  tmap_leaflet(gwr2Plot, in.shiny=TRUE)
   
 })
 
-output$gwr2 <- renderTmap({
-  
-  gwr1Plot <- tm_shape(mapward_sp) +
-    tm_fill("prevalence_overweight_reception",
-            title="Residuals",
-            style="quantile",
-            n=5,
-            palette="RdBu",
-            midpoint=0,
-            id="area_nm",
-            alpha=0.8,
-            legend.format=list(digits=2)
-    ) +
-    tm_borders(alpha=0.8
-    ) +
-    tm_view(view.legend.position=c("right","top"),
-            control.position=c("left","bottom"),
-            colorNA="Black"
-    ) +
-    tmap_options(basemaps=c("Esri.WorldGrayCanvas","Stamen.TonerLite","OpenStreetMap"),
-                 basemaps.alpha=c(0.8,0.5,0.7)
-    )
-  #  tmap_leaflet(gwr1Plot, in.shiny=TRUE)
-  
-})
 
 }
 
