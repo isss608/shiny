@@ -163,7 +163,7 @@ varGwrDistance <- c(
 )
 
 # -----Define UI for app
-ui <- fluidPage(theme=shinytheme("cerulean"),
+ui <- fluidPage(theme=shinytheme("superhero"),
     
 # -----Navigation Bar
     navbarPage("Tesco", fluid=TRUE, windowTitle="Tesco Grocery 1.0 Visual Analytics", selected="gwr",
