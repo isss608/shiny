@@ -162,6 +162,7 @@ varGwrDistance <- c(
   "Manhattan"=1
 )
 
+
 # -----Define UI for app
 ui <- fluidPage(theme=shinytheme("superhero"),
     
@@ -732,17 +733,31 @@ output$gwr1 <- renderLeaflet({
   GwrFormula <- as.formula(paste(input$GwrY,paste(input$GwrX, collapse="+"), sep="~"))
   GwrBw <- bw.gwr(GwrFormula, data=GwrDataSp, approach=input$GwrApproach, kernel=input$GwrKernel, adaptive=input$GwrBandwidth, p=input$GwrDistance, longlat=FALSE)
   Gwr <- gwr.basic(GwrFormula, data=GwrDataSp, bw=GwrBw, kernel=input$GwrKernel, adaptive=input$GwrBandwidth, p=input$GwrDistance, longlat=FALSE, cv=TRUE)
+  # GwrSDF <- as.data.frame(Gwr$SDF)
+  # GwrResult <- cbind(GwrDataSf, as.matrix(GwrSDF))
+  var.n<-length(Gwr$lm$coefficients)
+  dp.n<-length(Gwr$lm$residuals)
+  variableSelect <- as.list(input$GwrX)
+  #cat(file=stderr(), "variableSelect:", variableSelect, "\n")
+  GwrDiagnostic <- as.data.frame(Gwr$GW.diagnostic) %>%
+    mutate(lm_RSS=sum(Gwr$lm$residuals^2)) %>%
+    mutate(lm_AIC=dp.n*log(lm_RSS/dp.n)+dp.n*log(2*pi)+dp.n+2*(var.n + 1)) %>%
+    mutate(lm_AICc=dp.n*log(lm_RSS/dp.n)+dp.n*log(2*pi)+dp.n+2*dp.n*(var.n+1)/(dp.n-var.n-2)) %>%
+    mutate(lm_R2=summary(Gwr$lm)$r.squared) %>%
+    mutate(lm_R2.adj=summary(Gwr$lm)$adj.r.squared) %>%
+    mutate(bw=Gwr$GW.arguments$bw) %>%
+    mutate(dp.n=dp.n)
   GwrSDF <- as.data.frame(Gwr$SDF)
-  GwrResult <- cbind(GwrDataSf, as.matrix(GwrSDF))
-  
-  # bw.fixed <- bw.gwr(formula = prevalence_obese_y6 ~ energy_carb + h_nutrients_calories, data=mapmsoa_sp, approach="CV", kernel="gaussian", adaptive=FALSE, longlat=FALSE)
-  # gwr.fixed <- gwr.basic(formula = prevalence_obese_y6 ~ energy_carb + h_nutrients_calories, data=mapmsoa_sp, bw=bw.fixed, kernel = 'gaussian', longlat = FALSE)
-  # bw.adaptive <- bw.gwr(formula = prevalence_obese_y6 ~ energy_carb + h_nutrients_calories, data=mapmsoa_sp, approach="CV", kernel="gaussian", adaptive=TRUE, longlat=FALSE)
-  # gwr.adaptive <- gwr.basic(formula = prevalence_obese_y6 ~ energy_carb + h_nutrients_calories, data=mapmsoa_sp, bw=bw.adaptive, kernel = 'gaussian', adaptive=TRUE, longlat = FALSE)
-  # gwr.adaptive.output <- as.data.frame(gwr.adaptive$SDF)
-  # mapmsoa_sf.adaptive <- cbind(mapmsoa_sf, as.matrix(gwr.adaptive.output))
+  for (dim_ in variableSelect) {
+    #cat(file=stderr(), "variableSelect:", variableSelect, "\n")
+    GwrSDF[, paste0(dim_, "_PV")] <- pt(abs(GwrSDF[, paste0(dim_, "_TV")]),df=length(GwrSDF)-1,lower.tail=FALSE)*2
+  }
+  GwrResult <- mapmsoa_sf %>%
+    select(area_id,area_nm,lad_id,lad_nm,geometry) %>%
+    cbind(GwrDataSf, as.matrix(GwrSDF))
   
 
+  
   gwr1Plot <- tm_shape(GwrResult) +
     tm_fill("Local_R2",
             title=Gwr1Title,
