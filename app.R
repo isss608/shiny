@@ -238,6 +238,7 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                        fluidRow(
                                          column(6,
                                                 leafletOutput("lisa"),
+                                                column(6,
                                                 selectInput(inputId="inLisaMethod",
                                                             label="Analysis Method",
                                                             choices=c("Contiguity Queen"="q",
@@ -249,7 +250,8 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                                             selected="q",
                                                             multiple=FALSE,
                                                             width="100%"
-                                                ),
+                                                )),
+                                                column(6,
                                                 selectInput(inputId="inLisaSignificance",
                                                             label="Confidence Level",
                                                             choices=c("90%"=0.1,
@@ -260,7 +262,7 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                                             selected=0.1,
                                                             multiple=FALSE,
                                                             width="100%"
-                                                ),
+                                                )),
                                                 conditionalPanel(condition="input.inLisaMethod=='knn'",
                                                                  sliderInput(inputId="k",
                                                                              label="Select K",
@@ -273,6 +275,7 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                          ),
                                          column(6,
                                                 leafletOutput("reference"),
+                                                column(6,
                                                 selectInput(inputId="inReference",
                                                             label="Reference Value",
                                                             choices=c("Raw Values"="r",
@@ -282,7 +285,8 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                                             selected="p",
                                                             multiple=FALSE,
                                                             width="100%"
-                                                ),
+                                                )),
+                                                column(6,
                                                 conditionalPanel(condition="input.inReference!='p'",
                                                                  selectInput(inputId="inBinning",
                                                                              label="Binning Method",
@@ -300,19 +304,19 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                                                              selected="quantile",
                                                                              multiple=FALSE,
                                                                              width="100%"
-                                                                 ),
+                                                                 ))),
+                                                conditionalPanel(condition="input.inReference!='p'",
                                                                  sliderInput(inputId="inN",
                                                                              label="Select number of classes",
                                                                              min=2,
                                                                              max=10,
                                                                              value=5,
                                                                              width="100%"
-                                                                 )
+                                                                 ))
                                                 )
                                          )
                                        )
                              )
-                         )
                 ),
 
 
