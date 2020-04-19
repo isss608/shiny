@@ -224,7 +224,7 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                                       multiple=FALSE,
                                                       width="100%"
                                           ),
-                                          conditionalPanel(condition="input.inLod!='LAD'",
+                                          # conditionalPanel(condition="input.inLod!='LAD'",
                                           selectInput(inputId="inLad",
                                                       label="Local Authority District",
                                                       choices=varLad,
@@ -232,7 +232,7 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                                       multiple=FALSE,
                                                       width="100%"
                                           )
-                                          )
+                                          # )
                              ),
                              mainPanel(width=9,
                                        fluidRow(
@@ -519,37 +519,44 @@ server <- function(input, output, session) {
     if (input$inLod=="LAD") {
     subset <- maplad_sp[,"area_nm"]
     indicator <- pull(maplad_sp@data, input$inMeasure)
-    subsetView <- maprgn_sp
+    # subsetView <- maprgn_sp
     }
     else if (input$inLod=="Ward") {
       subset <- mapward_sp[,"area_nm"]
       indicator <- pull(mapward_sp@data, input$inMeasure)
-      if (input$inLad=="All") {
-        subsetView <- maprgn_sp
-      }
-      else {
-        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
-      }
+      # if (input$inLad=="All") {
+      #   subsetView <- maprgn_sp
+      # }
+      # else {
+      #   subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
+      # }
     }
     else if (input$inLod=="MSOA") {
       subset <- mapmsoa_sp[,"area_nm"]
       indicator <- pull(mapmsoa_sp@data, input$inMeasure)
-      if (input$inLad=="All") {
-        subsetView <- maprgn_sp
-      }
-      else {
-        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
-      }
+      # if (input$inLad=="All") {
+      #   subsetView <- maprgn_sp
+      # }
+      # else {
+      #   subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
+      # }
     }
     else {
       subset <- maplsoa_sp[,"area_nm"]
       indicator <- pull(maplsoa_sp@data, input$inMeasure)
-      if (input$inLad=="All") {
-        subsetView <- maprgn_sp
-      }
-      else {
-        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
-      }
+      # if (input$inLad=="All") {
+      #   subsetView <- maprgn_sp
+      # }
+      # else {
+      #   subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
+      # }
+    }
+    
+    if (input$inLad=="All"){
+      subsetView <- maprgn_sp[,"area_nm"]
+    }
+    else {
+      subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
     }
 
     if (input$inLisaMethod=="q") {
@@ -623,37 +630,44 @@ server <- function(input, output, session) {
     if (input$inLod=="LAD") {
       subset <- maplad_sp[,c("area_nm",input$inMeasure)]
       refDf <- cbind(subset, rv$lmoran)
-      subsetView <- maprgn_sp
+      # subsetView <- maprgn_sp
     }
     else if (input$inLod=="Ward") {
       subset <- mapward_sp[,c("area_nm",input$inMeasure)]
       refDf <- cbind(subset, rv$lmoran)
-      if (input$inLad=="All") {
-        subsetView <- maprgn_sp
-      }
-      else {
-        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
-      }
+      # if (input$inLad=="All") {
+      #   subsetView <- maprgn_sp
+      # }
+      # else {
+      #   subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
+      # }
     }
     else if (input$inLod=="MSOA") {
       subset <- mapmsoa_sp[,c("area_nm",input$inMeasure)]
       refDf <- cbind(subset, rv$lmoran)
-      if (input$inLad=="All") {
-        subsetView <- maprgn_sp
-      }
-      else {
-        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
-      }
+      # if (input$inLad=="All") {
+      #   subsetView <- maprgn_sp
+      # }
+      # else {
+      #   subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
+      # }
     }
     else {
       subset <- maplsoa_sp[,c("area_nm",input$inMeasure)]
       refDf <- cbind(subset, rv$lmoran)
-      if (input$inLad=="All") {
-        subsetView <- maprgn_sp
-      }
-      else {
-        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
-      }
+      # if (input$inLad=="All") {
+      #   subsetView <- maprgn_sp
+      # }
+      # else {
+      #   subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
+      # }
+    }
+    
+    if (input$inLad=="All"){
+      subsetView <- maprgn_sp[,"area_nm"]
+    }
+    else {
+      subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
     }
 
     if (input$inReference=="r"){
@@ -705,28 +719,14 @@ server <- function(input, output, session) {
 
 
 observe({
-  coords1 <- input$lisa_bounds
-  if (!is.null(coords1)) {
-    leafletProxy("reference") %>% 
-      fitBounds(coords1$west,
-                coords1$south,
-                coords1$east,
-                coords1$north)
-  }
-}, priority=3)
-
-observe({
-  coords2 <- input$reference_bounds
-  if (!is.null(coords2)) {
-    leafletProxy("lisa") %>% 
-      fitBounds(coords2$west,
-                coords2$south,
-                coords2$east,
-                coords2$north)
-  }
-}, priority=3)
-
-observe({
+  input$inLod
+  input$inMeasure
+  input$inLisaMethod
+  input$inLisaSignificance
+  input$k
+  input$inReference
+  input$inBinning
+  input$inN
   coords3 <- ladbbox[ladbbox$area_nm==input$inLad,c("xmin","ymin","xmax","ymax")]
   if (!is.null(coords3)) {
     leafletProxy("reference") %>%
@@ -740,8 +740,29 @@ observe({
                   coords3$xmax,
                   coords3$ymax)
   }
+}, priority=100)
+
+observe({
+  coords1 <- input$lisa_bounds
+  if (!is.null(coords1)) {
+    leafletProxy("reference") %>%
+      fitBounds(coords1$west,
+                coords1$south,
+                coords1$east,
+                coords1$north)
+  }
 }, priority=1)
 
+# observe({
+#   coords2 <- input$reference_bounds
+#   if (!is.null(coords2)) {
+#     leafletProxy("lisa") %>%
+#       fitBounds(coords2$west,
+#                 coords2$south,
+#                 coords2$east,
+#                 coords2$north)
+#   }
+# }, priority=1)
 
 # -----GWR functions
 observe({
