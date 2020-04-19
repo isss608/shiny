@@ -11,6 +11,10 @@ library(sp)
 library(spdep)
 library(rgdal)
 library(GWmodel)
+library(reactlog)
+
+# tell shiny to log all reactivity
+options(shiny.reactlog = TRUE)
 
 
 # -----Load data files
@@ -380,9 +384,7 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                                 leafletOutput("gwr1"),
                                                 selectInput(inputId="Gwr1Reference",
                                                             label="Reference Value",
-                                                            choices=c("Local R2"="r",
-                                                                      "Residuals"="i",
-                                                                      "P-Value"="p"
+                                                            choices=c("Local R2"="r"
                                                             ),
                                                             selected="r",
                                                             multiple=FALSE,
@@ -730,14 +732,21 @@ output$gwr1 <- renderLeaflet({
     
   }
   
+  
   GwrFormula <- as.formula(paste(input$GwrY,paste(input$GwrX, collapse="+"), sep="~"))
-  GwrBw <- bw.gwr(GwrFormula, data=GwrDataSp, approach=input$GwrApproach, kernel=input$GwrKernel, adaptive=input$GwrBandwidth, p=input$GwrDistance, longlat=FALSE)
-  Gwr <- gwr.basic(GwrFormula, data=GwrDataSp, bw=GwrBw, kernel=input$GwrKernel, adaptive=input$GwrBandwidth, p=input$GwrDistance, longlat=FALSE, cv=TRUE)
+  GwrBw <- bw.gwr(GwrFormula, data=GwrDataSp, approach=input$GwrApproach, kernel=input$GwrKernel, adaptive=input$GwrBandwidth, p=input$GwrDistance, longlat=TRUE)
+  Gwr <- gwr.basic(GwrFormula, data=GwrDataSp, bw=GwrBw, kernel=input$GwrKernel, adaptive=input$GwrBandwidth, p=input$GwrDistance, longlat=TRUE, cv=TRUE)
   # GwrSDF <- as.data.frame(Gwr$SDF)
   # GwrResult <- cbind(GwrDataSf, as.matrix(GwrSDF))
   var.n<-length(Gwr$lm$coefficients)
   dp.n<-length(Gwr$lm$residuals)
-  variableSelect <- as.list(input$GwrX)
+  variableSelect <- input$GwrX
+  updateSelectInput(session, inputId="Gwr1Reference",
+                    label="Reference Value",
+                    choices=c("Local R2"="r",
+                              setNames(variableSelect, input$GwrX)
+                    )
+  )
   #cat(file=stderr(), "variableSelect:", variableSelect, "\n")
   GwrDiagnostic <- as.data.frame(Gwr$GW.diagnostic) %>%
     mutate(lm_RSS=sum(Gwr$lm$residuals^2)) %>%
@@ -822,7 +831,6 @@ output$gwr2 <- renderLeaflet({
 
 
 }
-
 
 # -----Create Shiny app ----
 shinyApp(ui, server)
