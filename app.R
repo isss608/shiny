@@ -352,20 +352,14 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                                       multiple=TRUE,
                                                       width="100%"
                                           ),
-                                          selectInput(inputId="GwrModel",
-                                                      label="Regression Model",
-                                                      choices=varGwrModel,
-                                                      selected=NULL,
-                                                      multiple=FALSE,
-                                                      width="100%"
-                                          ),
-                                          selectInput(inputId="GwrKernel",
-                                                      label="Kernel Method",
-                                                      choices=varGwrKernel,
-                                                      selected="gaussian",
-                                                      multiple=FALSE,
-                                                      width="100%"
-                                          ),
+                                          column(6,
+                                                 selectInput(inputId="GwrModel",
+                                                             label="Regression Model",
+                                                             choices=varGwrModel,
+                                                             selected=NULL,
+                                                             multiple=FALSE,
+                                                             width="100%"
+                                                 ),
                                           radioButtons(inputId="GwrDistance",
                                                       label="Distance Method",
                                                       choices=varGwrDistance,
@@ -373,23 +367,33 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                                       inline=TRUE,
                                                       width="100%"
                                           ),
-                                          radioButtons(inputId="GwrApproach",
-                                                       label="Approach Method",
-                                                       choices=varGwrApproach,
-                                                       selected="CV",
-                                                       inline=TRUE,
-                                                       width="100%"
-                                          ),
                                           checkboxInput(inputId="GwrBandwidth",
-                                                      label="Adaptive Kernel",
-                                                      value=FALSE,
-                                                      width="100%"
+                                                        label="Adaptive Kernel",
+                                                        value=TRUE,
+                                                        width="100%"
+                                          )
                                           ),
+                                          column(6,
+                                                 selectInput(inputId="GwrKernel",
+                                                             label="Kernel Method",
+                                                             choices=varGwrKernel,
+                                                             selected="gaussian",
+                                                             multiple=FALSE,
+                                                             width="100%"
+                                                 ),
+                                                 radioButtons(inputId="GwrApproach",
+                                                              label="Approach Method",
+                                                              choices=varGwrApproach,
+                                                              selected="CV",
+                                                              inline=TRUE,
+                                                              width="100%"
+                                                 ),       
                                           checkboxInput(inputId="GwrAutoBandwidth",
                                                         label="Auto Bandwidth",
                                                         value=TRUE,
                                                         width="100%"
-                                          ),
+                                          )),
+                                          fluidRow(
                                           conditionalPanel(condition="input.GwrAutoBandwidth==0",
                                                            sliderInput(inputId="ManualBandwidth",
                                                                        label="Specify Bandwidth",
@@ -400,7 +404,7 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                                            )
                                           ),
                                           actionButton("goButtonGwr", "Apply changes")
-                             ),
+                             )),
                              mainPanel(width=9, fluid=TRUE,
                                        fluidRow(
                                          column(6,
