@@ -164,6 +164,12 @@ varGwrBandwidth <- c(
   "Adaptive"=TRUE
 )
 
+# GWR AutoBandwidth
+varGwrAutoBandwidth <- c(
+  "Manual"=FALSE,
+  "Auto"=TRUE
+)
+
 # GWR Distance
 varGwrDistance <- c(
   "Euclidean"=2,
@@ -353,33 +359,45 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                                       multiple=FALSE,
                                                       width="100%"
                                           ),
-                                          selectInput(inputId="GwrApproach",
-                                                      label="Regression Approach",
-                                                      choices=varGwrApproach,
-                                                      selected="CV",
-                                                      multiple=FALSE,
-                                                      width="100%"
-                                          ),
                                           selectInput(inputId="GwrKernel",
-                                                      label="Select Kernel Method",
+                                                      label="Kernel Method",
                                                       choices=varGwrKernel,
                                                       selected="gaussian",
                                                       multiple=FALSE,
                                                       width="100%"
                                           ),
-                                          selectInput(inputId="GwrBandwidth",
-                                                      label="Bandwidth Method",
-                                                      choices=varGwrBandwidth,
-                                                      selected=FALSE,
-                                                      multiple=FALSE,
-                                                      width="100%"
-                                          ),
-                                          selectInput(inputId="GwrDistance",
+                                          radioButtons(inputId="GwrDistance",
                                                       label="Distance Method",
                                                       choices=varGwrDistance,
                                                       selected=2,
-                                                      multiple=FALSE,
+                                                      inline=TRUE,
                                                       width="100%"
+                                          ),
+                                          radioButtons(inputId="GwrApproach",
+                                                       label="Approach Method",
+                                                       choices=varGwrApproach,
+                                                       selected="CV",
+                                                       inline=TRUE,
+                                                       width="100%"
+                                          ),
+                                          checkboxInput(inputId="GwrBandwidth",
+                                                      label="Adaptive Kernel",
+                                                      value=FALSE,
+                                                      width="100%"
+                                          ),
+                                          checkboxInput(inputId="GwrAutoBandwidth",
+                                                        label="Auto Bandwidth",
+                                                        value=TRUE,
+                                                        width="100%"
+                                          ),
+                                          conditionalPanel(condition="input.GwrAutoBandwidth==0",
+                                                           sliderInput(inputId="ManualBandwidth",
+                                                                       label="Specify Bandwidth",
+                                                                       min=5,
+                                                                       max=1000,
+                                                                       value=20,
+                                                                       width="100%"
+                                                           )
                                           ),
                                           actionButton("goButtonGwr", "Apply changes")
                              ),
