@@ -731,9 +731,9 @@ output$gwr1 <- renderLeaflet({
   
   GwrFormula <- as.formula(paste(input$GwrY,paste(input$GwrX, collapse="+"), sep="~"))
   GwrBw <- bw.gwr(GwrFormula, data=GwrDataSp, approach=input$GwrApproach, kernel=input$GwrKernel, adaptive=input$GwrBandwidth, p=input$GwrDistance, longlat=FALSE)
-  Gwr <- gwr.basic(GwrFormula, data=GwrDataSp, bw=GwrBw, kernel=input$GwrKernel, adaptive=input$GwrBandwidth, p=input$GwrDistance, longlat=FALSE)
-  Gwr.output <- as.data.frame(Gwr$SDF)
-  Gwr.sf <- cbind(GwrDataSf, as.matrix(Gwr.output))
+  Gwr <- gwr.basic(GwrFormula, data=GwrDataSp, bw=GwrBw, kernel=input$GwrKernel, adaptive=input$GwrBandwidth, p=input$GwrDistance, longlat=FALSE, cv=TRUE)
+  GwrSDF <- as.data.frame(Gwr$SDF)
+  GwrResult <- cbind(GwrDataSf, as.matrix(GwrSDF))
   
   # bw.fixed <- bw.gwr(formula = prevalence_obese_y6 ~ energy_carb + h_nutrients_calories, data=mapmsoa_sp, approach="CV", kernel="gaussian", adaptive=FALSE, longlat=FALSE)
   # gwr.fixed <- gwr.basic(formula = prevalence_obese_y6 ~ energy_carb + h_nutrients_calories, data=mapmsoa_sp, bw=bw.fixed, kernel = 'gaussian', longlat = FALSE)
@@ -743,7 +743,7 @@ output$gwr1 <- renderLeaflet({
   # mapmsoa_sf.adaptive <- cbind(mapmsoa_sf, as.matrix(gwr.adaptive.output))
   
 
-  gwr1Plot <- tm_shape(Gwr.sf) +
+  gwr1Plot <- tm_shape(GwrResult) +
     tm_fill("Local_R2",
             title=Gwr1Title,
             style=input$Gwr1Binning,
