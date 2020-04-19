@@ -11,10 +11,10 @@ library(sp)
 library(spdep)
 library(rgdal)
 library(GWmodel)
-library(reactlog)
+#library(reactlog)
 
 # tell shiny to log all reactivity
-options(shiny.reactlog = TRUE)
+#options(shiny.reactlog = TRUE)
 
 
 # -----Load data files
@@ -380,7 +380,8 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                                       selected=2,
                                                       multiple=FALSE,
                                                       width="100%"
-                                          )
+                                          ),
+                                          submitButton("Apply changes")
                              ),
                              mainPanel(width=9, fluid=TRUE,
                                        fluidRow(
@@ -388,9 +389,9 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                                 leafletOutput("gwr1"),
                                                 selectInput(inputId="Gwr1Reference",
                                                             label="Reference Value",
-                                                            choices=c("Local R2"="r"
+                                                            choices=c("Local R2"="Local_R2"
                                                             ),
-                                                            selected="r",
+                                                            selected=NULL,
                                                             multiple=FALSE,
                                                             width="100%"
                                                 ),
@@ -721,6 +722,14 @@ observe({
 
 
 # -----GWR functions
+observe({
+rv$variableSelect <- input$GwrX
+updateSelectInput(session, inputId="Gwr1Reference",
+                  label="Reference Value",
+                  choices=c("Local R2"="Local_R2",rv$variableSelect)
+)
+})
+
 output$gwr1 <- renderLeaflet({
   
   if (input$GwrLod=="LAD") {
@@ -732,8 +741,14 @@ output$gwr1 <- renderLeaflet({
   else {
     GwrDataSp <- mapmsoa_sp
     GwrDataSf <- mapmsoa_sf
-    Gwr1Title <- "Fixed Title"
+    if (input$Gwr1Reference=="Local_R2"){
+      Gwr1Title <- "Local R2"
+    }
+    else {
+      Gwr1Title <- "Coefficients"
+    }
     
+
   }
   
   
@@ -744,13 +759,11 @@ output$gwr1 <- renderLeaflet({
   # GwrResult <- cbind(GwrDataSf, as.matrix(GwrSDF))
   var.n<-length(Gwr$lm$coefficients)
   dp.n<-length(Gwr$lm$residuals)
-  variableSelect <- input$GwrX
-  updateSelectInput(session, inputId="Gwr1Reference",
-                    label="Reference Value",
-                    choices=c("Local R2"="r",
-                              setNames(variableSelect, input$GwrX)
-                    )
-  )
+  # variableSelect <- input$GwrX
+  # updateSelectInput(session, inputId="Gwr1Reference",
+  #                   label="Reference Value",
+  #                   choices=c("Local R2"="Local_R2",variableSelect)
+  #                   )
   #cat(file=stderr(), "variableSelect:", variableSelect, "\n")
   GwrDiagnostic <- as.data.frame(Gwr$GW.diagnostic) %>%
     mutate(lm_RSS=sum(Gwr$lm$residuals^2)) %>%
@@ -761,7 +774,7 @@ output$gwr1 <- renderLeaflet({
     mutate(bw=Gwr$GW.arguments$bw) %>%
     mutate(dp.n=dp.n)
   GwrSDF <- as.data.frame(Gwr$SDF)
-  for (dim_ in variableSelect) {
+  for (dim_ in rv$variableSelect) {
     #cat(file=stderr(), "variableSelect:", variableSelect, "\n")
     GwrSDF[, paste0(dim_, "_PV")] <- pt(abs(GwrSDF[, paste0(dim_, "_TV")]),df=length(GwrSDF)-1,lower.tail=FALSE)*2
   }
@@ -772,12 +785,12 @@ output$gwr1 <- renderLeaflet({
 
   
   gwr1Plot <- tm_shape(GwrResult) +
-    tm_fill("Local_R2",
+    tm_fill(input$Gwr1Reference,
             title=Gwr1Title,
             style=input$Gwr1Binning,
             n=input$Gwr1N,
             breaks=c(0,0.001,0.01,0.05,0.1,1),
-            palette=colorsBu,
+            palette="RdBu",
             midpoint=0,
             id="area_nm",
             alpha=0.8,
