@@ -517,38 +517,38 @@ server <- function(input, output, session) {
   output$lisa <- renderLeaflet({
     
     if (input$inLod=="LAD") {
-    subset <- maplad_sf[,"area_nm"]
-    indicator <- pull(maplad_sf, input$inMeasure)
-    subsetView <- maprgn_sf
+    subset <- maplad_sp[,"area_nm"]
+    indicator <- pull(maplad_sp@data, input$inMeasure)
+    subsetView <- maprgn_sp
     }
     else if (input$inLod=="Ward") {
-      subset <- mapward_sf[,"area_nm"]
-      indicator <- pull(mapward_sf, input$inMeasure)
+      subset <- mapward_sp[,"area_nm"]
+      indicator <- pull(mapward_sp@data, input$inMeasure)
       if (input$inLad=="All") {
-        subsetView <- maprgn_sf
+        subsetView <- maprgn_sp
       }
       else {
-        subsetView <- maplad_sf[maplad_sf$area_nm==input$inLad,"area_nm"]
+        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
       }
     }
     else if (input$inLod=="MSOA") {
-      subset <- mapmsoa_sf[,"area_nm"]
-      indicator <- pull(mapmsoa_sf, input$inMeasure)
+      subset <- mapmsoa_sp[,"area_nm"]
+      indicator <- pull(mapmsoa_sp@data, input$inMeasure)
       if (input$inLad=="All") {
-        subsetView <- maprgn_sf
+        subsetView <- maprgn_sp
       }
       else {
-        subsetView <- maplad_sf[maplad_sf$area_nm==input$inLad,"area_nm"]
+        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
       }
     }
     else {
-      subset <- maplsoa_sf[,"area_nm"]
-      indicator <- pull(maplsoa_sf, input$inMeasure)
+      subset <- maplsoa_sp[,"area_nm"]
+      indicator <- pull(maplsoa_sp@data, input$inMeasure)
       if (input$inLad=="All") {
-        subsetView <- maprgn_sf
+        subsetView <- maprgn_sp
       }
       else {
-        subsetView <- maplad_sf[maplad_sf$area_nm==input$inLad,"area_nm"]
+        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
       }
     }
 
@@ -621,38 +621,38 @@ server <- function(input, output, session) {
   output$reference <- renderLeaflet({
     
     if (input$inLod=="LAD") {
-      subset <- maplad_sf[,c("area_nm",input$inMeasure)]
+      subset <- maplad_sp[,c("area_nm",input$inMeasure)]
       refDf <- cbind(subset, rv$lmoran)
-      subsetView <- maprgn_sf
+      subsetView <- maprgn_sp
     }
     else if (input$inLod=="Ward") {
-      subset <- mapward_sf[,c("area_nm",input$inMeasure)]
+      subset <- mapward_sp[,c("area_nm",input$inMeasure)]
       refDf <- cbind(subset, rv$lmoran)
       if (input$inLad=="All") {
-        subsetView <- maprgn_sf
+        subsetView <- maprgn_sp
       }
       else {
-        subsetView <- maplad_sf[maplad_sf$area_nm==input$inLad,"area_nm"]
+        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
       }
     }
     else if (input$inLod=="MSOA") {
-      subset <- mapmsoa_sf[,c("area_nm",input$inMeasure)]
+      subset <- mapmsoa_sp[,c("area_nm",input$inMeasure)]
       refDf <- cbind(subset, rv$lmoran)
       if (input$inLad=="All") {
-        subsetView <- maprgn_sf
+        subsetView <- maprgn_sp
       }
       else {
-        subsetView <- maplad_sf[maplad_sf$area_nm==input$inLad,"area_nm"]
+        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
       }
     }
     else {
-      subset <- maplsoa_sf[,c("area_nm",input$inMeasure)]
+      subset <- maplsoa_sp[,c("area_nm",input$inMeasure)]
       refDf <- cbind(subset, rv$lmoran)
       if (input$inLad=="All") {
-        subsetView <- maprgn_sf
+        subsetView <- maprgn_sp
       }
       else {
-        subsetView <- maplad_sf[maplad_sf$area_nm==input$inLad,"area_nm"]
+        subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
       }
     }
 
@@ -778,7 +778,13 @@ output$gwr1 <- renderLeaflet({
   isolate({
   
   GwrFormula <- as.formula(paste(input$GwrY,paste(input$GwrX, collapse="+"), sep="~"))
-  GwrBw <- bw.gwr(GwrFormula, data=GwrDataSp, approach=input$GwrApproach, kernel=input$GwrKernel, adaptive=input$GwrBandwidth, p=input$GwrDistance, longlat=TRUE)
+  if (input$GwrAutoBandwidth==1) {
+    GwrBw <- bw.gwr(GwrFormula, data=GwrDataSp, approach=input$GwrApproach, kernel=input$GwrKernel, adaptive=input$GwrBandwidth, p=input$GwrDistance, longlat=TRUE)
+  }
+  else {
+    GwrBw <- input$ManualBandwidth
+  }
+  
   Gwr <- gwr.basic(GwrFormula, data=GwrDataSp, bw=GwrBw, kernel=input$GwrKernel, adaptive=input$GwrBandwidth, p=input$GwrDistance, longlat=TRUE, cv=TRUE)
   # GwrSDF <- as.data.frame(Gwr$SDF)
   # GwrResult <- cbind(GwrDataSf, as.matrix(GwrSDF))
