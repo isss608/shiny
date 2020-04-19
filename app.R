@@ -381,7 +381,7 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                                       multiple=FALSE,
                                                       width="100%"
                                           ),
-                                          submitButton("Apply changes")
+                                          actionButton("goButtonGwr", "Apply changes")
                              ),
                              mainPanel(width=9, fluid=TRUE,
                                        fluidRow(
@@ -732,6 +732,8 @@ updateSelectInput(session, inputId="Gwr1Reference",
 
 output$gwr1 <- renderLeaflet({
   
+  input$goButtonGwr
+  
   if (input$GwrLod=="LAD") {
     
   }
@@ -751,6 +753,7 @@ output$gwr1 <- renderLeaflet({
 
   }
   
+  isolate({
   
   GwrFormula <- as.formula(paste(input$GwrY,paste(input$GwrX, collapse="+"), sep="~"))
   GwrBw <- bw.gwr(GwrFormula, data=GwrDataSp, approach=input$GwrApproach, kernel=input$GwrKernel, adaptive=input$GwrBandwidth, p=input$GwrDistance, longlat=TRUE)
@@ -813,6 +816,8 @@ output$gwr1 <- renderLeaflet({
   # output$text1 <- renderPrint({
   #   print(GwrFormula)
   # })
+  
+})
   
 })
 
