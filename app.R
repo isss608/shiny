@@ -175,12 +175,6 @@ varGwrLad <- c(
   "Westminster"
 )
 
-# GWR Model
-varGwrModel <- c(
-  "Basic GWR"="gwr",
-  "Generalised GWR"="ggwr"
-)
-
 # GWR Approach
 varGwrApproach <- c(
   "CV"="CV",
@@ -446,8 +440,7 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                                                        value=20,
                                                                        width="100%"
                                                            )
-                                          ),
-                                          actionButton("goButtonGwr", "Apply changes")
+                                          )
                              )),
                              mainPanel(width=9, fluid=TRUE,
                                        fluidRow(
@@ -480,52 +473,50 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                                             multiple=FALSE,
                                                             width="100%"
                                                 )),
-                                                conditionalPanel(condition="input.Gwr1Binning=='kmeans'",
                                                 sliderInput(inputId="Gwr1N",
                                                             label="Select number of classes",
                                                             min=2,
                                                             max=30,
                                                             value=5,
                                                             width="100%"
-                                                ))
+                                                )
                                          ),
                                          column(6,
-                                                leafletOutput("gwr2"),
-                                                selectInput(inputId="Gwr2Reference",
-                                                            label="Reference Value",
-                                                            choices=c("P-Value"="p",
-                                                                      "Local R2"="r",
-                                                                      "Residuals"="i"
-                                                                      
-                                                            ),
-                                                            selected="p",
-                                                            multiple=FALSE,
-                                                            width="100%"
-                                                ),
-                                                selectInput(inputId="Gwr2Binning",
-                                                            label="Binning Method",
-                                                            choices=c("Std Deviation"="sd",
-                                                                      "Equal"="equal",
-                                                                      "Pretty"="pretty",
-                                                                      "Quantile"="quantile",
-                                                                      "K-means Cluster"="kmeans",
-                                                                      "Hierarchical Cluster"="hclust",
-                                                                      "Bagged Cluster"="bclust",
-                                                                      "Fisher"="fisher",
-                                                                      "Jenks"="jenks",
-                                                                      "Log10 Pretty"="log10_pretty"
-                                                            ),
-                                                            selected="quantile",
-                                                            multiple=FALSE,
-                                                            width="100%"
-                                                ),
-                                                sliderInput(inputId="Gwr2N",
-                                                            label="Select number of classes",
-                                                            min=2,
-                                                            max=10,
-                                                            value=5,
-                                                            width="100%"
-                                                )
+                                                leafletOutput("gwr2")
+                                                # selectInput(inputId="Gwr2Reference",
+                                                #             label="Reference Value",
+                                                #             choices=c("P-Value"="p",
+                                                #                       "Local R2"="r",
+                                                #                       "Residuals"="i"
+                                                #             ),
+                                                #             selected="p",
+                                                #             multiple=FALSE,
+                                                #             width="100%"
+                                                # ),
+                                                # selectInput(inputId="Gwr2Binning",
+                                                #             label="Binning Method",
+                                                #             choices=c("Std Deviation"="sd",
+                                                #                       "Equal"="equal",
+                                                #                       "Pretty"="pretty",
+                                                #                       "Quantile"="quantile",
+                                                #                       "K-means Cluster"="kmeans",
+                                                #                       "Hierarchical Cluster"="hclust",
+                                                #                       "Bagged Cluster"="bclust",
+                                                #                       "Fisher"="fisher",
+                                                #                       "Jenks"="jenks",
+                                                #                       "Log10 Pretty"="log10_pretty"
+                                                #             ),
+                                                #             selected="quantile",
+                                                #             multiple=FALSE,
+                                                #             width="100%"
+                                                # ),
+                                                # sliderInput(inputId="Gwr2N",
+                                                #             label="Select number of classes",
+                                                #             min=2,
+                                                #             max=10,
+                                                #             value=5,
+                                                #             width="100%"
+                                                # )
                                          )
                                        )
                              )
@@ -599,10 +590,10 @@ server <- function(input, output, session) {
     }
     
     if (input$inLad=="All"){
-      subsetView <- maprgn_sp[,"area_nm"]
+      rv$subsetView <- maprgn_sp[,"area_nm"]
     }
     else {
-      subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
+      rv$subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
     }
 
     if (input$inLisaMethod=="q") {
@@ -664,7 +655,7 @@ server <- function(input, output, session) {
       tmap_options(basemaps=c("Esri.WorldGrayCanvas","Stamen.TonerLite","OpenStreetMap"),
                    basemaps.alpha=c(0.8,0.5,0.7)
       ) +
-      tm_shape(subsetView) +
+      tm_shape(rv$subsetView) +
       tm_borders(col="black",
                  lwd=3)
     tmap_leaflet(lisaPlot, in.shiny=TRUE)
@@ -709,12 +700,12 @@ server <- function(input, output, session) {
       # }
     }
     
-    if (input$inLad=="All"){
-      subsetView <- maprgn_sp[,"area_nm"]
-    }
-    else {
-      subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
-    }
+    # if (input$inLad=="All"){
+    #   subsetView <- maprgn_sp[,"area_nm"]
+    # }
+    # else {
+    #   subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
+    # }
 
     if (input$inReference=="r"){
       tmFill <- input$inMeasure
@@ -756,7 +747,7 @@ server <- function(input, output, session) {
         tmap_options(basemaps=c("Esri.WorldGrayCanvas","Stamen.TonerLite","OpenStreetMap"),
                      basemaps.alpha=c(0.8,0.5,0.7)
         ) +
-        tm_shape(subsetView) +
+        tm_shape(rv$subsetView) +
         tm_borders(col="black",
           lwd=3)
       tmap_leaflet(refPlot, in.shiny=TRUE)
@@ -822,10 +813,7 @@ updateSelectInput(session, inputId="Gwr1Reference",
 
 output$gwr1 <- renderLeaflet({
   
-  # input$goButtonGwr
-  # 
-  # isolate({
-  
+
   if (input$GwrLod=="LAD") {
     GwrDataSp <- maplad_sp
     GwrDataSf <- maplad_sf
@@ -864,8 +852,7 @@ output$gwr1 <- renderLeaflet({
     rv$subsetGwrView <- maplad_sf[maplad_sf$area_nm==input$GwrLad,"area_nm"]
   }
   
-  
-  
+
   GwrFormula <- as.formula(paste(input$GwrY,paste(input$GwrX, collapse="+"), sep="~"))
   if (input$GwrAutoBandwidth==1) {
     GwrBw <- bw.gwr(GwrFormula, data=GwrDataSp, approach=input$GwrApproach, kernel=input$GwrKernel, adaptive=input$GwrBandwidth, p=input$GwrDistance, longlat=TRUE)
@@ -875,15 +862,8 @@ output$gwr1 <- renderLeaflet({
   }
   
   Gwr <- gwr.basic(GwrFormula, data=GwrDataSp, bw=GwrBw, kernel=input$GwrKernel, adaptive=input$GwrBandwidth, p=input$GwrDistance, longlat=TRUE, cv=TRUE)
-  # GwrSDF <- as.data.frame(Gwr$SDF)
-  # GwrResult <- cbind(GwrDataSf, as.matrix(GwrSDF))
   var.n<-length(Gwr$lm$coefficients)
   dp.n<-length(Gwr$lm$residuals)
-  # variableSelect <- input$GwrX
-  # updateSelectInput(session, inputId="Gwr1Reference",
-  #                   label="Reference Value",
-  #                   choices=c("Local R2"="Local_R2",variableSelect)
-  #                   )
   #cat(file=stderr(), "variableSelect:", variableSelect, "\n")
   GwrDiagnostic <- as.data.frame(Gwr$GW.diagnostic) %>%
     mutate(lm_RSS=sum(Gwr$lm$residuals^2)) %>%
@@ -903,7 +883,6 @@ output$gwr1 <- renderLeaflet({
     cbind(., as.matrix(GwrSDF))
   
 
-  
   gwr1Plot <- tm_shape(rv$GwrResult) +
     tm_fill(input$Gwr1Reference,
             title=Gwr1Title,
@@ -930,18 +909,22 @@ output$gwr1 <- renderLeaflet({
                lwd=3)
   tmap_leaflet(gwr1Plot, in.shiny=TRUE)
   
-  # output$text1 <- renderPrint({
-  #   print(GwrFormula)
-  # })
-  
-# })
-  
+
 })
 
 output$gwr2 <- renderLeaflet({
   
+
+  if (input$Gwr1Reference=="Local_R2") {
+    GwrPV <- input$Gwr1Reference
+  }
+  else {
+    GwrPV <- paste0(input$Gwr1Reference, "_TV")
+  }
+  
+
   gwr2Plot <- tm_shape(rv$GwrResult) +
-    tm_fill("Local_R2",
+    tm_fill(GwrPV,
             title="P-value",
             style="fixed",
             n=5,
@@ -966,6 +949,7 @@ output$gwr2 <- renderLeaflet({
                lwd=3)
   tmap_leaflet(gwr2Plot, in.shiny=TRUE)
   
+
 })
 
 
