@@ -13,6 +13,13 @@ library(rgdal)
 library(GWmodel)
 #library(reactlog)
 
+#jufri
+library(ClustGeo)
+library(dendextend)
+library(GGally)
+library(ggdendro)
+library(corrplot)
+
 # tell shiny to log all reactivity
 #options(shiny.reactlog = TRUE)
 
@@ -353,14 +360,98 @@ ui <- fluidPage(theme=shinytheme("superhero"),
 
 
 # -----Clustering Panel
-                tabPanel("Clustering", value="clustering", fluid=TRUE, icon=icon("globe-asia"),
-                         sidebarLayout(position="right", fluid=TRUE,
-                             sidebarPanel("Cluster sidebarPanel", width=3, fluid=TRUE
-                             ),
-                             mainPanel("Cluster mainPanel", width=9
-                             )
-                         )
-                ),
+tabPanel("Clustering", value="clustering", fluid=TRUE, icon=icon("globe-asia"),
+         sidebarLayout(position="left", fluid=TRUE,
+                       sidebarPanel("Cluster sidebarPanel", width=3, fluid=TRUE,
+                                    selectInput(inputId="inLodc",
+                                                label="Level of Detail",
+                                                choices=varLod,
+                                                selected="LAD",
+                                                multiple=FALSE,
+                                                width="100%"
+                                    ),
+                                    conditionalPanel(condition="input.inLodc!='LAD'",
+                                                     selectInput(inputId="inLadc",
+                                                                 label="Local Authority District",
+                                                                 choices=varLad,
+                                                                 selected="All",
+                                                                 multiple=FALSE,
+                                                                 width="100%"
+                                                     )
+                                    ),
+                                    selectInput(inputId="inMeasureCluster",
+                                                label="Measure",
+                                                choices=varMeasure1,
+                                                selected=c("Fat"="fat",
+                                                           "Saturate"="saturate",
+                                                           "Salt"="salt",
+                                                           "Sugar"="sugar",
+                                                           "Protein"="protein",
+                                                           "Carb"="carb",
+                                                           "Fibre"="fibre",
+                                                           "Alcohol"="alcohol"),
+                                                multiple=TRUE,
+                                                width="100%"
+                                    ),
+                                    checkboxInput(inputId="inShowCorrPlot", label="Show Correlation Plot", value=FALSE),
+                                    conditionalPanel(condition="input.inShowCorrPlot",
+                                                     plotOutput("corrplot")
+                                    ),
+                                    sliderInput(inputId="inClusterSize", label="Cluster Size", min=1, max=10,
+                                                value=5, step=1, round=TRUE
+                                    ),
+                                    plotOutput("findkplot", height = 300),
+                       ),
+                       mainPanel(width=9,
+                                 fluidRow(
+                                   column(6,
+                                          radioButtons(inputId = "clustMethod",
+                                                       label = "Select Clustering Method",
+                                                       choiceNames = c("Hierarchical Clustering","Geo Spatial Clustering","Skater Clustering"),
+                                                       choiceValues = c("HC","GS","SK"),
+                                                       selected = "HC"),
+                                          leafletOutput("cluster_left"),
+                                          conditionalPanel(condition="input.clustMethod=='GS'",
+                                                           sliderInput(inputId = "inAlpha", label = "Mixing Factor", min = 0, 
+                                                                       max = 1, value = 0.4,width="100%", step=0.1),
+                                                           plotOutput("alphaplot", height = 300)
+                                          ),
+                                          conditionalPanel(condition="input.clustMethod=='HC'",
+                                                           selectInput(inputId="inAggloMethod",
+                                                                       label="Agglomeration Method",
+                                                                       choices=c("ward.D"="ward.D",
+                                                                                 "ward.D2"="ward.D2",
+                                                                                 "single"="single",
+                                                                                 "complete"="complete",
+                                                                                 "average"="average",
+                                                                                 "mcquitty"="mcquitty",
+                                                                                 "median"="median",
+                                                                                 "centroid"="centroid"
+                                                                       ),
+                                                                       selected="ward.D"
+                                                           ),
+                                                           tableOutput("aggloplot")
+                                          )            
+                                   ),
+                                   column(6,
+                                          plotOutput("cluster_right"),
+                                          conditionalPanel(condition="input.inLodc!='LSOA'",
+                                                           plotOutput("dendoplot")
+                                          ),
+                                          conditionalPanel(condition="input.inLodc=='LSOA'",
+                                                           "Dendogram not recommended for LSOA. More than 4000 records."
+                                          ),
+                                          radioButtons(inputId = "inDendoGraph",
+                                                       label = "Graph type",
+                                                       inline = TRUE, 
+                                                       choiceNames = c("Tree", "Fan"),
+                                                       choiceValues = c("tree","fan"),
+                                                       selected = "tree"),
+                                   )
+                                 )
+                       )
+         )
+),
 
 
 # -----GWR Panel
@@ -369,7 +460,7 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                              sidebarPanel(width=3, fluid=TRUE,
                                           column(5,
                                           selectInput(inputId="GwrLod",
-                                                      label="Regression Level",
+                                                      label="GWR Level",
                                                       choices=varGwrLod,
                                                       selected="LAD",
                                                       multiple=FALSE,
@@ -406,24 +497,24 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                           ),
                                           column(5,
                                                  radioButtons(inputId="GwrApproach",
-                                                              label="Approach Method",
+                                                              label="Approach",
                                                               choices=varGwrApproach,
                                                               selected="CV",
-                                                              inline=TRUE,
+                                                              inline=FALSE,
                                                               width="100%"
                                                  ),
                                           checkboxInput(inputId="GwrBandwidth",
-                                                        label="Adaptive Kernel",
+                                                        label="Adaptive",
                                                         value=TRUE,
                                                         width="100%"
                                           )
                                           ),
                                           column(7,
                                                  radioButtons(inputId="GwrDistance",
-                                                              label="Distance Method",
+                                                              label="Distance",
                                                               choices=varGwrDistance,
                                                               selected=2,
-                                                              inline=TRUE,
+                                                              inline=FALSE,
                                                               width="100%"
                                                  ),
                                           checkboxInput(inputId="GwrAutoBandwidth",
@@ -520,6 +611,7 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                          )
                                        ),
                                        tableOutput(outputId="GwrTable"),
+                                       # DT::dataTableOutput(outputId="GwrTable"),
                                        verbatimTextOutput(outputId="GwrSummary")
                              )
                          )
@@ -612,13 +704,13 @@ server <- function(input, output, session) {
     }
     else if (input$inLisaMethod=="idw-q") {
       wm <- poly2nb(subset, queen=TRUE)
-      dist <- nbdists(wm, coordinates(subset), longlat=TRUE)
+      dist <- nbdists(wm, coordinates(subset), longlat=FALSE)
       idw <- lapply(dist, function(x) 1/(x/1000))
       rswm <- nb2listw(wm, glist=idw, style="B", zero.policy=TRUE)
     }
     else {
       wm <- poly2nb(subset, queen=FALSE)
-      dist <- nbdists(wm, coordinates(subset), longlat=TRUE)
+      dist <- nbdists(wm, coordinates(subset), longlat=FALSE)
       idw <- lapply(dist, function(x) 1/(x/1000))
       rswm <- nb2listw(wm, glist=idw, style="B", zero.policy=TRUE)
     }
@@ -803,6 +895,377 @@ observe({
 #   }
 # }, priority=1)
 
+
+# -----Clustering functions
+clusterset <- "global"
+
+clustersetSelect <- reactive({
+  if (input$inLodc=="LAD") {
+    maplad_sp
+  }
+  else if (input$inLodc=="Ward") {
+    mapward_sp
+  }
+  else if (input$inLodc=="MSOA") {
+    mapmsoa_sp 
+  }
+  else {
+    maplsoa_sp 
+  }
+})
+
+output$cluster_left <- renderLeaflet({
+  
+  clusterset <<- clustersetSelect()
+  
+  if (input$clustMethod=='SK'){
+    ## Skater ##  
+    vars <- input$inMeasureCluster
+    sdat <- data.frame(scale(as.data.frame(clusterset)[,vars]))
+    
+    clusterset.nb <- poly2nb(clusterset)
+    
+    lcosts <- nbcosts(clusterset.nb,sdat)
+    
+    clusterset.w <- nb2listw(clusterset.nb,lcosts,style="B")
+    
+    mpsz.mst <- mstree(clusterset.w)
+    
+    clusterGrp <- skater(mpsz.mst[,1:2],sdat,input$inClusterSize-1)
+    
+    groups <- as.factor(clusterGrp$groups)
+    #clusterset$cluster <- as.matrix(groups)
+    
+    ## Skater ##  
+  } else {  
+    ## H Clustering ##
+    vars <- input$inMeasureCluster
+    #  str(input$inMeasure2)
+    sdat <- data.frame(scale(as.data.frame(clusterset)[,vars]))
+    
+    D0 <- dist(sdat, method = 'euclidean')
+    
+    if (input$clustMethod=='HC'){
+      hclust_scaled <- hclust(D0, method = input$inAggloMethod) 
+    } else {
+      # Build neighbourhood list based on regions with adjacent boundries
+      list.nb <- spdep::poly2nb(clusterset)
+      # Create adjacency matrix
+      A <- spdep::nb2mat(list.nb,style="W", zero.policy = TRUE)
+      diag(A) <- 1
+      colnames(A) <- rownames(A)
+      D1 <- as.dist(1-A)
+      hclust_scaled <- hclustgeo(D0,D1,alpha=input$inAlpha)
+    }
+    
+    groups <- as.factor(cutree(hclust_scaled, k=input$inClusterSize))
+    #clusterset$cluster <- as.matrix(groups)
+    
+    ## H Clustering ##
+  }
+  
+  clusterset$cluster <<- as.matrix(groups)
+  
+  if (input$inLodc!="LAD") {
+    if (input$inLadc!="All") {
+      clusterset <- clusterset[clusterset$lad_nm==input$inLadc,] 
+    }
+  } 
+  
+  clusterPlot <- tm_shape(clusterset) +
+    tm_polygons("cluster", title="Clusters", id="area_nm") +
+    tm_format("World") 
+  # +
+  # tm_borders(alpha=0.8
+  # ) +
+  # tm_view(view.legend.position=c("right","bottom"),
+  #         control.position=c("left","bottom"),
+  #         colorNA="Black"
+  # ) +
+  # tmap_options(basemaps=c("Esri.WorldGrayCanvas","Stamen.TonerLite","OpenStreetMap"),
+  #              basemaps.alpha=c(0.8,0.5,0.7)
+  # )
+  
+  tmap_leaflet(clusterPlot, in.shiny=TRUE)
+  
+})
+
+output$findkplot <- renderPlot({
+  
+  clusterset <- clustersetSelect()
+  
+  vars <- input$inMeasureCluster
+  #  str(input$inMeasure2)
+  sdat <- data.frame(scale(as.data.frame(clusterset)[,vars]))
+  
+  D0 <- dist(sdat, method = 'euclidean')
+  tesco_clust <- hclust(D0, method = "ward.D")
+  num_k <- find_k(tesco_clust)
+  plot(num_k)
+  
+})
+
+output$corrplot <- renderPlot({
+  
+  #clusterset <- clusterset()
+  
+  vars <- input$inMeasureCluster
+  #  str(input$inMeasure2)
+  sdat_corr <- data.frame(scale(as.data.frame(clusterset)[,vars]))
+  
+  clust.cor = cor(sdat_corr)
+  
+  corrplot.mixed(clust.cor, 
+                 lower = "ellipse", 
+                 upper = "number",
+                 #p.mat = ward.sig$p,
+                 sig.level = .05,
+                 tl.pos = "lt",
+                 bg = "white",
+                 diag = "l",
+                 order="AOE",
+                 tl.col = "black")
+})
+
+output$cluster_right <- renderPlot({
+  
+  #clusterset <- clustersetSelect()
+  #l_clusterset <- clusterset
+  vars <-  input$inMeasureCluster
+  k <- input$inClusterSize
+  m <- input$clustMethod
+  inAlpha <- input$inAlpha
+  #  str(input$inMeasure2)
+  sdat2 <- data.frame(scale(as.data.frame(clusterset)[,vars]))
+  
+  sdat2["cluster"] <- as.factor(clusterset$cluster)
+  #str(sdat2$cluster)
+  
+  # bp <- ggplot(sdat2, aes(x=dose, y=len, group=cluster)) + 
+  #   geom_boxplot(aes(fill=dose))
+  # bp
+  ggparcoord(data = sdat2,
+             columns = c(1:(ncol(sdat2)-1)),
+             groupColumn = "cluster",
+             scale = "uniminmax",
+             boxplot = TRUE,
+             title = "Parallel Coord. Tesco Measures") +
+    theme(axis.text.x = element_text(angle = 90),
+          axis.text.y=element_blank(),
+          axis.ticks.x=element_blank(),
+          axis.ticks.y=element_blank())+
+    facet_wrap(~ cluster)
+  
+  # boxplot(sdat2[,1:(ncol(sdat2)-1)],
+  #         main = "Multiple boxplots for comparision",
+  #         #at = c(1,2,4,5),
+  #         #names = c("ozone", "normal", "temp", "normal"),
+  #         las = 2,
+  #         #col = c("orange","red"),
+  #         border = "brown",
+  #         #horizontal = TRUE,
+  #         notch = TRUE
+  # )+
+  #   facet_wrap(~ cluster)
+  
+  
+})
+
+output$alphaplot <- renderPlot({ 
+  
+  clusterset <- clustersetSelect()
+  
+  ## H Clustering ##
+  vars <- input$inMeasureCluster
+  sdat <- data.frame(scale(as.data.frame(clusterset)[,vars]))
+  
+  D0 <- dist(sdat, method = 'euclidean')
+  
+  
+  # Build neighbourhood list based on regions with adjacent boundries
+  list.nb <- spdep::poly2nb(clusterset)
+  # Create adjacency matrix
+  A <- spdep::nb2mat(list.nb,style="W", zero.policy = TRUE)
+  diag(A) <- 1
+  colnames(A) <- rownames(A)
+  D1 <- as.dist(1-A)
+  
+  # Choosing Alpha
+  range.alpha <- seq(0,1,0.1)
+  choicealpha(D0,D1,range.alpha,input$inClusterSize,graph=TRUE)
+})
+
+output$aggloplot <- renderTable({ 
+  
+  clusterset <- clustersetSelect()
+  
+  vars <- input$inMeasureCluster
+  sdat <- data.frame(scale(as.data.frame(clusterset)[,vars]))
+  
+  tesco_matrix <- data.matrix(sdat)
+  tesco_d <- dist((tesco_matrix), method = "euclidean")
+  
+  dend_expend(tesco_d)[[3]]
+  
+})
+
+output$dendoplot <- renderPlot({ 
+  
+  dendro_data_k <- function(hc, k) {
+    
+    hcdata    <-  ggdendro::dendro_data(hc, type = "rectangle")
+    seg       <-  hcdata$segments
+    labclust  <-  cutree(hc, k)[hc$order]
+    segclust  <-  rep(0L, nrow(seg))
+    heights   <-  sort(hc$height, decreasing = TRUE)
+    height    <-  mean(c(heights[k], heights[k - 1L]), na.rm = TRUE)
+    
+    for (i in 1:k) {
+      xi      <-  hcdata$labels$x[labclust == i]
+      idx1    <-  seg$x    >= min(xi) & seg$x    <= max(xi)
+      idx2    <-  seg$xend >= min(xi) & seg$xend <= max(xi)
+      idx3    <-  seg$yend < height
+      idx     <-  idx1 & idx2 & idx3
+      segclust[idx] <- i
+    }
+    
+    idx                    <-  which(segclust == 0L)
+    segclust[idx]          <-  segclust[idx + 1L]
+    hcdata$segments$clust  <-  segclust
+    hcdata$segments$line   <-  as.integer(segclust < 1L)
+    hcdata$labels$clust    <-  labclust
+    
+    hcdata
+  }
+  
+  set_labels_params <- function(nbLabels,
+                                direction = c("tb", "bt", "lr", "rl"),
+                                fan       = FALSE) {
+    if (fan) {
+      angle       <-  360 / nbLabels * 1:nbLabels + 90
+      idx         <-  angle >= 90 & angle <= 270
+      angle[idx]  <-  angle[idx] + 180
+      hjust       <-  rep(0, nbLabels)
+      hjust[idx]  <-  1
+    } else {
+      angle       <-  rep(0, nbLabels)
+      hjust       <-  0
+      if (direction %in% c("tb", "bt")) { angle <- angle + 45 }
+      if (direction %in% c("tb", "rl")) { hjust <- 1 }
+    }
+    list(angle = angle, hjust = hjust, vjust = 0.5)
+  }
+  plot_ggdendro <- function(hcdata,
+                            direction   = c("lr", "rl", "tb", "bt"),
+                            fan         = FALSE,
+                            scale.color = NULL,
+                            branch.size = 1,
+                            label.size  = 3,
+                            nudge.label = 0.01,
+                            expand.y    = 0.1) {
+    
+    direction <- match.arg(direction) # if fan = FALSE
+    ybreaks   <- pretty(segment(hcdata)$y, n = 5)
+    ymax      <- max(segment(hcdata)$y)
+    
+    ## branches
+    p <- ggplot() +
+      geom_segment(data         =  segment(hcdata),
+                   aes(x        =  x,
+                       y        =  y,
+                       xend     =  xend,
+                       yend     =  yend,
+                       linetype =  factor(line),
+                       colour   =  factor(clust)),
+                   lineend      =  "round",
+                   show.legend  =  FALSE,
+                   size         =  branch.size)
+    
+    ## orientation
+    if (fan) {
+      p <- p +
+        coord_polar(direction = -1) +
+        scale_x_continuous(breaks = NULL,
+                           limits = c(0, nrow(label(hcdata)))) +
+        scale_y_reverse(breaks = ybreaks)
+    } else {
+      p <- p + scale_x_continuous(breaks = NULL)
+      if (direction %in% c("rl", "lr")) {
+        p <- p + coord_flip()
+      }
+      if (direction %in% c("bt", "lr")) {
+        p <- p + scale_y_reverse(breaks = ybreaks)
+      } else {
+        p <- p + scale_y_continuous(breaks = ybreaks)
+        nudge.label <- -(nudge.label)
+      }
+    }
+    
+    # labels
+    labelParams <- set_labels_params(nrow(hcdata$labels), direction, fan)
+    hcdata$labels$angle <- labelParams$angle
+    
+    p <- p +
+      geom_text(data        =  label(hcdata),
+                aes(x       =  x,
+                    y       =  y,
+                    label   =  label,
+                    colour  =  factor(clust),
+                    angle   =  angle),
+                vjust       =  labelParams$vjust,
+                hjust       =  labelParams$hjust,
+                nudge_y     =  ymax * nudge.label,
+                size        =  label.size,
+                show.legend =  FALSE)
+    
+    # colors and limits
+    if (!is.null(scale.color)) {
+      p <- p + scale_color_manual(values = scale.color)
+    }
+    
+    ylim <- -round(ymax * expand.y, 1)
+    p    <- p + expand_limits(y = ylim)
+    
+    p
+  }
+  
+  if(input$inLodc!='LSOA'){
+    dummyLod <- input$inLodc
+    vars <- input$inMeasureCluster
+    #  str(input$inMeasure2)
+    sdat <- data.frame(scale(as.data.frame(clusterset)[,vars]))
+    row.names(sdat) <- clusterset$area_id
+    #str(clusterset)
+    
+    D <- dist(sdat, method = 'euclidean')
+    
+    hc  <- hclust(D)
+    hc$labels <- as.factor(clusterset$area_nm)
+    
+    hcdata <- dendro_data_k(hc, input$inClusterSize)
+    
+    if(input$inDendoGraph=='tree'){
+      p <- plot_ggdendro(hcdata,
+                         direction   = "lr",
+                         expand.y    = 0.2)
+      p
+    } else {
+      p <- plot_ggdendro(hcdata,
+                         fan         = TRUE,
+                         #scale.color = cols,
+                         label.size  = 2,
+                         nudge.label = 0.02,
+                         expand.y    = 0.4)
+      
+      mytheme <- theme(panel.background = element_rect(fill = "white"))
+      
+      p + theme_void() + mytheme
+    }
+  }
+})
+
+
+
 # -----GWR functions
 observe({
 rv$variableSelect <- input$GwrX
@@ -857,13 +1320,13 @@ output$gwr1 <- renderLeaflet({
 
   GwrFormula <- as.formula(paste(input$GwrY,paste(input$GwrX, collapse="+"), sep="~"))
   if (input$GwrAutoBandwidth==1) {
-    GwrBw <- bw.gwr(GwrFormula, data=GwrDataSp, approach=input$GwrApproach, kernel=input$GwrKernel, adaptive=input$GwrBandwidth, p=input$GwrDistance, longlat=TRUE)
+    GwrBw <- bw.gwr(GwrFormula, data=GwrDataSp, approach=input$GwrApproach, kernel=input$GwrKernel, adaptive=input$GwrBandwidth, p=input$GwrDistance, longlat=FALSE)
   }
   else {
     GwrBw <- input$ManualBandwidth
   }
   
-  rv$Gwr <- gwr.basic(GwrFormula, data=GwrDataSp, bw=GwrBw, kernel=input$GwrKernel, adaptive=input$GwrBandwidth, p=input$GwrDistance, longlat=TRUE, cv=TRUE)
+  rv$Gwr <- gwr.basic(GwrFormula, data=GwrDataSp, bw=GwrBw, kernel=input$GwrKernel, adaptive=input$GwrBandwidth, p=input$GwrDistance, longlat=FALSE, cv=TRUE)
   var.n<-length(rv$Gwr$lm$coefficients)
   dp.n<-length(rv$Gwr$lm$residuals)
   #cat(file=stderr(), "variableSelect:", variableSelect, "\n")
@@ -956,6 +1419,7 @@ output$gwr2 <- renderLeaflet({
 
 
 output$GwrTable <- renderTable(rv$GwrDiagnostic)
+# output$GwrTable <- DT::renderDataTable(rv$GwrDiagnostic)
 
 output$GwrSummary <- renderPrint({
   rv$Gwr
