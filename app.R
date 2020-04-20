@@ -249,15 +249,15 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                 tabPanel("ESDA", value="esda", fluid=TRUE, icon=icon("globe-americas"),
                          sidebarLayout(position="right", fluid=TRUE,
                              sidebarPanel(width=3, fluid=TRUE,
-                                          column(4,
+                                          column(5,
                                           selectInput(inputId="inLod",
-                                                      label="Level of Detail",
+                                                      label="ESDA Level",
                                                       choices=varLod,
                                                       selected="LAD",
                                                       multiple=FALSE,
                                                       width="100%"
                                           )),
-                                          column(8,
+                                          column(7,
                                           selectInput(inputId="inLad",
                                                       label="LAD Zoom",
                                                       choices=varLad,
@@ -1384,7 +1384,7 @@ output$gwr2 <- renderLeaflet({
     GwrPV <- input$Gwr1Reference
   }
   else {
-    GwrPV <- paste0(input$Gwr1Reference, "_TV")
+    GwrPV <- paste0(input$Gwr1Reference, "_PV")
   }
   
 
