@@ -871,7 +871,7 @@ observe({
                   coords3$xmax,
                   coords3$ymax)
   }
-}, priority=100)
+}, priority=2)
 
 observe({
   coords1 <- input$lisa_bounds
@@ -1453,7 +1453,7 @@ observe({
                 coordsGwr$xmax,
                 coordsGwr$ymax)
   }
-}, priority=100)
+}, priority=2)
 
 observe({
   coordsGwr2 <- input$gwr1_bounds
