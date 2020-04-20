@@ -518,7 +518,9 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                                 #             width="100%"
                                                 # )
                                          )
-                                       )
+                                       ),
+                                       tableOutput(outputId="GwrTable"),
+                                       verbatimTextOutput(outputId="GwrSummary")
                              )
                          )
                 )
@@ -861,19 +863,19 @@ output$gwr1 <- renderLeaflet({
     GwrBw <- input$ManualBandwidth
   }
   
-  Gwr <- gwr.basic(GwrFormula, data=GwrDataSp, bw=GwrBw, kernel=input$GwrKernel, adaptive=input$GwrBandwidth, p=input$GwrDistance, longlat=TRUE, cv=TRUE)
-  var.n<-length(Gwr$lm$coefficients)
-  dp.n<-length(Gwr$lm$residuals)
+  rv$Gwr <- gwr.basic(GwrFormula, data=GwrDataSp, bw=GwrBw, kernel=input$GwrKernel, adaptive=input$GwrBandwidth, p=input$GwrDistance, longlat=TRUE, cv=TRUE)
+  var.n<-length(rv$Gwr$lm$coefficients)
+  dp.n<-length(rv$Gwr$lm$residuals)
   #cat(file=stderr(), "variableSelect:", variableSelect, "\n")
-  GwrDiagnostic <- as.data.frame(Gwr$GW.diagnostic) %>%
-    mutate(lm_RSS=sum(Gwr$lm$residuals^2)) %>%
+  rv$GwrDiagnostic <- as.data.frame(rv$Gwr$GW.diagnostic) %>%
+    mutate(lm_RSS=sum(rv$Gwr$lm$residuals^2)) %>%
     mutate(lm_AIC=dp.n*log(lm_RSS/dp.n)+dp.n*log(2*pi)+dp.n+2*(var.n + 1)) %>%
     mutate(lm_AICc=dp.n*log(lm_RSS/dp.n)+dp.n*log(2*pi)+dp.n+2*dp.n*(var.n+1)/(dp.n-var.n-2)) %>%
-    mutate(lm_R2=summary(Gwr$lm)$r.squared) %>%
-    mutate(lm_R2.adj=summary(Gwr$lm)$adj.r.squared) %>%
-    mutate(bw=Gwr$GW.arguments$bw) %>%
+    mutate(lm_R2=summary(rv$Gwr$lm)$r.squared) %>%
+    mutate(lm_R2.adj=summary(rv$Gwr$lm)$adj.r.squared) %>%
+    mutate(bw=rv$Gwr$GW.arguments$bw) %>%
     mutate(dp.n=dp.n)
-  GwrSDF <- as.data.frame(Gwr$SDF)
+  GwrSDF <- as.data.frame(rv$Gwr$SDF)
   for (dim_ in rv$variableSelect) {
     #cat(file=stderr(), "variableSelect:", variableSelect, "\n")
     GwrSDF[, paste0(dim_, "_PV")] <- pt(abs(GwrSDF[, paste0(dim_, "_TV")]),df=length(GwrSDF)-1,lower.tail=FALSE)*2
@@ -950,6 +952,13 @@ output$gwr2 <- renderLeaflet({
   tmap_leaflet(gwr2Plot, in.shiny=TRUE)
   
 
+})
+
+
+output$GwrTable <- renderTable(rv$GwrDiagnostic)
+
+output$GwrSummary <- renderPrint({
+  rv$Gwr
 })
 
 
