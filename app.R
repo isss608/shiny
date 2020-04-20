@@ -35,10 +35,10 @@ load("data/maplsoa_sf.rda")
 
 # Level of Detail
 varLod <- c(
-  "Local Authority District"="LAD",
+  "LAD"="LAD",
   "Ward"="Ward",
-  "Middle Super Output Area"="MSOA",
-  "Lower Super Output Area"="LSOA"
+  "MSOA"="MSOA",
+  "LSOA"="LSOA"
 )
   
 # List of LAD
@@ -132,9 +132,47 @@ varMeasure2 <- c(
 
 # GWR Level of Detail
 varGwrLod <- c(
-  "Local Authority District"="LAD",
+  "LAD"="LAD",
   "Ward"="Ward",
-  "Middle Super Output Area"="MSOA"
+  "MSOA"="MSOA"
+)
+
+# GWR List of LAD
+varGwrLad <- c(
+  "All",
+  "City of London",
+  "Barking and Dagenham",
+  "Barnet",
+  "Bexley",
+  "Brent",
+  "Bromley",
+  "Camden",
+  "Croydon",
+  "Ealing",
+  "Enfield",
+  "Greenwich",
+  "Hackney",
+  "Hammersmith and Fulham",
+  "Haringey",
+  "Harrow",
+  "Havering",
+  "Hillingdon",
+  "Hounslow",
+  "Islington",
+  "Kensington and Chelsea",
+  "Kingston upon Thames",
+  "Lambeth",
+  "Lewisham",
+  "Merton",
+  "Newham",
+  "Redbridge",
+  "Richmond upon Thames",
+  "Southwark",
+  "Sutton",
+  "Tower Hamlets",
+  "Waltham Forest",
+  "Wandsworth",
+  "Westminster"
 )
 
 # GWR Model
@@ -210,29 +248,29 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                 tabPanel("ESDA", value="esda", fluid=TRUE, icon=icon("globe-americas"),
                          sidebarLayout(position="right", fluid=TRUE,
                              sidebarPanel(width=3, fluid=TRUE,
+                                          column(4,
                                           selectInput(inputId="inLod",
                                                       label="Level of Detail",
                                                       choices=varLod,
                                                       selected="LAD",
                                                       multiple=FALSE,
                                                       width="100%"
-                                          ),
+                                          )),
+                                          column(8,
+                                          selectInput(inputId="inLad",
+                                                      label="LAD Zoom",
+                                                      choices=varLad,
+                                                      selected="All",
+                                                      multiple=FALSE,
+                                                      width="100%"
+                                          )),
                                           selectInput(inputId="inMeasure",
                                                       label="Select Variable",
                                                       choices=varMeasure1,
                                                       selected="energy_carb",
                                                       multiple=FALSE,
                                                       width="100%"
-                                          ),
-                                          # conditionalPanel(condition="input.inLod!='LAD'",
-                                          selectInput(inputId="inLad",
-                                                      label="Local Authority District",
-                                                      choices=varLad,
-                                                      selected="All",
-                                                      multiple=FALSE,
-                                                      width="100%"
                                           )
-                                          # )
                              ),
                              mainPanel(width=9,
                                        fluidRow(
@@ -268,7 +306,7 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                                                              label="Select K",
                                                                              min=2,
                                                                              max=30,
-                                                                             value=3,
+                                                                             value=5,
                                                                              width="100%"
                                                                  )
                                                 )
@@ -335,13 +373,22 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                 tabPanel("GWR", value="gwr", fluid=TRUE, icon=icon("laptop-code"),
                          sidebarLayout(position="right", fluid=TRUE,
                              sidebarPanel(width=3, fluid=TRUE,
+                                          column(5,
                                           selectInput(inputId="GwrLod",
                                                       label="Regression Level",
                                                       choices=varGwrLod,
-                                                      selected="MSOA",
+                                                      selected="LAD",
                                                       multiple=FALSE,
                                                       width="100%"
-                                          ),
+                                          )),
+                                          column(7,
+                                          selectInput(inputId="GwrLad",
+                                                      label="LAD Zoom",
+                                                      choices=varGwrLad,
+                                                      selected="All",
+                                                      multiple=FALSE,
+                                                      width="100%"
+                                          )),
                                           selectInput(inputId="GwrY",
                                                       label="Dependent Variable",
                                                       choices=varMeasure2,
@@ -356,42 +403,35 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                                       multiple=TRUE,
                                                       width="100%"
                                           ),
-                                          column(6,
-                                                 selectInput(inputId="GwrModel",
-                                                             label="Regression Model",
-                                                             choices=varGwrModel,
-                                                             selected=NULL,
-                                                             multiple=FALSE,
-                                                             width="100%"
-                                                 ),
-                                          radioButtons(inputId="GwrDistance",
-                                                      label="Distance Method",
-                                                      choices=varGwrDistance,
-                                                      selected=2,
-                                                      inline=TRUE,
+                                          selectInput(inputId="GwrKernel",
+                                                      label="Kernel Method",
+                                                      choices=varGwrKernel,
+                                                      selected="gaussian",
+                                                      multiple=FALSE,
                                                       width="100%"
                                           ),
-                                          checkboxInput(inputId="GwrBandwidth",
-                                                        label="Adaptive Kernel",
-                                                        value=TRUE,
-                                                        width="100%"
-                                          )
-                                          ),
-                                          column(6,
-                                                 selectInput(inputId="GwrKernel",
-                                                             label="Kernel Method",
-                                                             choices=varGwrKernel,
-                                                             selected="gaussian",
-                                                             multiple=FALSE,
-                                                             width="100%"
-                                                 ),
+                                          column(5,
                                                  radioButtons(inputId="GwrApproach",
                                                               label="Approach Method",
                                                               choices=varGwrApproach,
                                                               selected="CV",
                                                               inline=TRUE,
                                                               width="100%"
-                                                 ),       
+                                                 ),
+                                          checkboxInput(inputId="GwrBandwidth",
+                                                        label="Adaptive Kernel",
+                                                        value=TRUE,
+                                                        width="100%"
+                                          )
+                                          ),
+                                          column(7,
+                                                 radioButtons(inputId="GwrDistance",
+                                                              label="Distance Method",
+                                                              choices=varGwrDistance,
+                                                              selected=2,
+                                                              inline=TRUE,
+                                                              width="100%"
+                                                 ),
                                           checkboxInput(inputId="GwrAutoBandwidth",
                                                         label="Auto Bandwidth",
                                                         value=TRUE,
@@ -413,6 +453,7 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                        fluidRow(
                                          column(6,
                                                 leafletOutput("gwr1"),
+                                                column(6,
                                                 selectInput(inputId="Gwr1Reference",
                                                             label="Reference Value",
                                                             choices=c("Local R2"="Local_R2"
@@ -420,7 +461,8 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                                             selected=NULL,
                                                             multiple=FALSE,
                                                             width="100%"
-                                                ),
+                                                )),
+                                                column(6,
                                                 selectInput(inputId="Gwr1Binning",
                                                             label="Binning Method",
                                                             choices=c("Std Deviation"="sd",
@@ -437,15 +479,15 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                                             selected="quantile",
                                                             multiple=FALSE,
                                                             width="100%"
-                                                ),
+                                                )),
+                                                conditionalPanel(condition="input.Gwr1Binning=='kmeans'",
                                                 sliderInput(inputId="Gwr1N",
                                                             label="Select number of classes",
                                                             min=2,
-                                                            max=10,
+                                                            max=30,
                                                             value=5,
                                                             width="100%"
-                                                ),
-                                                verbatimTextOutput("text1")
+                                                ))
                                          ),
                                          column(6,
                                                 leafletOutput("gwr2"),
@@ -777,15 +819,32 @@ updateSelectInput(session, inputId="Gwr1Reference",
 )
 })
 
+
 output$gwr1 <- renderLeaflet({
   
-  input$goButtonGwr
+  # input$goButtonGwr
+  # 
+  # isolate({
   
   if (input$GwrLod=="LAD") {
-    
+    GwrDataSp <- maplad_sp
+    GwrDataSf <- maplad_sf
+    if (input$Gwr1Reference=="Local_R2"){
+      Gwr1Title <- "Local R2"
+    }
+    else {
+      Gwr1Title <- "Coefficients"
+    }
   }
   else if (input$GwrLod=="Ward") {
-    
+    GwrDataSp <- mapward_sp
+    GwrDataSf <- mapward_sf
+    if (input$Gwr1Reference=="Local_R2"){
+      Gwr1Title <- "Local R2"
+    }
+    else {
+      Gwr1Title <- "Coefficients"
+    }
   }
   else {
     GwrDataSp <- mapmsoa_sp
@@ -796,11 +855,16 @@ output$gwr1 <- renderLeaflet({
     else {
       Gwr1Title <- "Coefficients"
     }
-    
-
   }
   
-  isolate({
+  if (input$GwrLad=="All"){
+    rv$subsetGwrView <- maprgn_sf[,"area_nm"]
+  }
+  else {
+    rv$subsetGwrView <- maplad_sf[maplad_sf$area_nm==input$GwrLad,"area_nm"]
+  }
+  
+  
   
   GwrFormula <- as.formula(paste(input$GwrY,paste(input$GwrX, collapse="+"), sep="~"))
   if (input$GwrAutoBandwidth==1) {
@@ -834,13 +898,13 @@ output$gwr1 <- renderLeaflet({
     #cat(file=stderr(), "variableSelect:", variableSelect, "\n")
     GwrSDF[, paste0(dim_, "_PV")] <- pt(abs(GwrSDF[, paste0(dim_, "_TV")]),df=length(GwrSDF)-1,lower.tail=FALSE)*2
   }
-  GwrResult <- mapmsoa_sf %>%
+  rv$GwrResult <- GwrDataSf %>%
     select(area_id,area_nm,lad_id,lad_nm,geometry) %>%
-    cbind(GwrDataSf, as.matrix(GwrSDF))
+    cbind(., as.matrix(GwrSDF))
   
 
   
-  gwr1Plot <- tm_shape(GwrResult) +
+  gwr1Plot <- tm_shape(rv$GwrResult) +
     tm_fill(input$Gwr1Reference,
             title=Gwr1Title,
             style=input$Gwr1Binning,
@@ -860,24 +924,24 @@ output$gwr1 <- renderLeaflet({
     ) +
     tmap_options(basemaps=c("Esri.WorldGrayCanvas","Stamen.TonerLite","OpenStreetMap"),
                  basemaps.alpha=c(0.8,0.5,0.7)
-    ) 
-    # tm_shape(subsetView) +
-    # tm_borders(col="black",
-    #            lwd=3)
+    ) +
+    tm_shape(rv$subsetGwrView) +
+    tm_borders(col="black",
+               lwd=3)
   tmap_leaflet(gwr1Plot, in.shiny=TRUE)
   
   # output$text1 <- renderPrint({
   #   print(GwrFormula)
   # })
   
-})
+# })
   
 })
 
 output$gwr2 <- renderLeaflet({
   
-  gwr2Plot <- tm_shape(mapmsoa_sp) +
-    tm_fill("representativeness_norm",
+  gwr2Plot <- tm_shape(rv$GwrResult) +
+    tm_fill("Local_R2",
             title="P-value",
             style="fixed",
             n=5,
@@ -896,13 +960,54 @@ output$gwr2 <- renderLeaflet({
     ) +
     tmap_options(basemaps=c("Esri.WorldGrayCanvas","Stamen.TonerLite","OpenStreetMap"),
                  basemaps.alpha=c(0.8,0.5,0.7)
-    ) 
-    # tm_shape(subsetView) +
-    # tm_borders(col="black",
-    #            lwd=3)
+    ) +
+    tm_shape(rv$subsetGwrView) +
+    tm_borders(col="black",
+               lwd=3)
   tmap_leaflet(gwr2Plot, in.shiny=TRUE)
   
 })
+
+
+observe({
+  input$GwrLod
+  input$GwrY
+  input$GwrX
+  input$GwrModel
+  input$GwrDistance
+  input$GwrBandwidth
+  input$GwrKernel
+  input$GwrApproach
+  input$GwrAutoBandwidth
+  input$GwrManualBandwidth
+  input$Gwr1Reference
+  input$Gwr1Binning
+  input$Gwr1N
+  coordsGwr <- ladbbox[ladbbox$area_nm==input$GwrLad,c("xmin","ymin","xmax","ymax")]
+  if (!is.null(coordsGwr)) {
+    leafletProxy("gwr1") %>%
+      fitBounds(coordsGwr$xmin,
+                coordsGwr$ymin,
+                coordsGwr$xmax,
+                coordsGwr$ymax)
+    leafletProxy("gwr2") %>%
+      fitBounds(coordsGwr$xmin,
+                coordsGwr$ymin,
+                coordsGwr$xmax,
+                coordsGwr$ymax)
+  }
+}, priority=100)
+
+observe({
+  coordsGwr2 <- input$gwr1_bounds
+  if (!is.null(coordsGwr2)) {
+    leafletProxy("gwr2") %>%
+      fitBounds(coordsGwr2$west,
+                coordsGwr2$south,
+                coordsGwr2$east,
+                coordsGwr2$north)
+  }
+}, priority=1)
 
 
 }
