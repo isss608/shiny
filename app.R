@@ -249,29 +249,33 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                 tabPanel("ESDA", value="esda", fluid=TRUE, icon=icon("globe-americas"),
                          sidebarLayout(position="right", fluid=TRUE,
                              sidebarPanel(width=3, fluid=TRUE,
+                                          fluidRow(
                                           column(5,
+                                          fluidRow(
                                           selectInput(inputId="inLod",
                                                       label="ESDA Level",
                                                       choices=varLod,
                                                       selected="LAD",
                                                       multiple=FALSE,
-                                                      width="100%"
-                                          )),
+                                                      width="97%"
+                                          ))),
                                           column(7,
+                                          fluidRow(
                                           selectInput(inputId="inLad",
                                                       label="LAD Zoom",
                                                       choices=varLad,
                                                       selected="All",
                                                       multiple=FALSE,
                                                       width="100%"
-                                          )),
+                                          )))),
+                                          fluidRow(
                                           selectInput(inputId="inMeasure",
                                                       label="Select Variable",
                                                       choices=varMeasure1,
                                                       selected="energy_carb",
                                                       multiple=FALSE,
                                                       width="100%"
-                                          )
+                                          ))
                              ),
                              mainPanel(width=9,
                                        fluidRow(
@@ -458,22 +462,26 @@ tabPanel("Clustering", value="clustering", fluid=TRUE, icon=icon("globe-asia"),
                 tabPanel("GWR", value="gwr", fluid=TRUE, icon=icon("laptop-code"),
                          sidebarLayout(position="right", fluid=TRUE,
                              sidebarPanel(width=3, fluid=TRUE,
+                                          fluidRow(
                                           column(5,
+                                          fluidRow(       
                                           selectInput(inputId="GwrLod",
                                                       label="GWR Level",
                                                       choices=varGwrLod,
                                                       selected="LAD",
                                                       multiple=FALSE,
-                                                      width="100%"
-                                          )),
+                                                      width="97%"
+                                          ))),
                                           column(7,
+                                          fluidRow(
                                           selectInput(inputId="GwrLad",
                                                       label="LAD Zoom",
                                                       choices=varGwrLad,
                                                       selected="All",
                                                       multiple=FALSE,
                                                       width="100%"
-                                          )),
+                                          )))),
+                                          fluidRow(
                                           selectInput(inputId="GwrY",
                                                       label="Dependent Variable",
                                                       choices=varMeasure2,
@@ -494,7 +502,8 @@ tabPanel("Clustering", value="clustering", fluid=TRUE, icon=icon("globe-asia"),
                                                       selected="gaussian",
                                                       multiple=FALSE,
                                                       width="100%"
-                                          ),
+                                          )),
+                                          fluidRow(
                                           column(5,
                                                  radioButtons(inputId="GwrApproach",
                                                               label="Approach",
@@ -521,18 +530,19 @@ tabPanel("Clustering", value="clustering", fluid=TRUE, icon=icon("globe-asia"),
                                                         label="Auto Bandwidth",
                                                         value=TRUE,
                                                         width="100%"
-                                          )),
+                                          ))),
                                           fluidRow(
                                           conditionalPanel(condition="input.GwrAutoBandwidth==0",
-                                                           sliderInput(inputId="ManualBandwidth",
+                                                           numericInput(inputId="ManualBandwidth",
                                                                        label="Specify Bandwidth",
                                                                        min=5,
-                                                                       max=1000,
+                                                                       max=9999,
                                                                        value=20,
-                                                                       width="100%"
+                                                                       width="75px"
                                                            )
                                           )
-                             )),
+                                          )
+                             ),
                              mainPanel(width=9, fluid=TRUE,
                                        fluidRow(
                                          column(6,
@@ -573,7 +583,58 @@ tabPanel("Clustering", value="clustering", fluid=TRUE, icon=icon("globe-asia"),
                                                 )
                                          ),
                                          column(6,
-                                                leafletOutput("gwr2")
+                                                leafletOutput("gwr2"),
+                                                column(4,
+                                                HTML(
+                                                  '<div class="info-box-content">
+                                                  <span class="info-box-text">GWR Adj R2: </span>
+                                                  <span class="info-box-number">
+                                                    <div id="showGwrR2" class="shiny-text-output"></div>
+                                                  </span>
+                                                  </div>'
+                                                ),
+                                                HTML(
+                                                  '<div class="info-box-content">
+                                                  <span class="info-box-text">GWR AIC: </span>
+                                                  <span class="info-box-number">
+                                                    <div id="showGwrAic" class="shiny-text-output"></div>
+                                                  </span>
+                                                  </div>'
+                                                )),
+                                                column(4,
+                                                HTML(
+                                                  '<div class="info-box-content">
+                                                  <span class="info-box-text">LM Adj R2: </span>
+                                                  <span class="info-box-number">
+                                                    <div id="showLmR2" class="shiny-text-output"></div>
+                                                  </span>
+                                                  </div>'
+                                                ),
+                                                HTML(
+                                                  '<div class="info-box-content">
+                                                  <span class="info-box-text">LM AIC: </span>
+                                                  <span class="info-box-number">
+                                                    <div id="showLmAic" class="shiny-text-output"></div>
+                                                  </span>
+                                                  </div>'
+                                                )),
+                                                column(4,
+                                                HTML(
+                                                  '<div class="info-box-content">
+                                                  <span class="info-box-text">Bandwidth: </span>
+                                                  <span class="info-box-number">
+                                                    <div id="showGwrBw" class="shiny-text-output"></div>
+                                                  </span>
+                                                  </div>'
+                                                ),
+                                                HTML(
+                                                  '<div class="info-box-content">
+                                                  <span class="info-box-text">Data Points: </span>
+                                                  <span class="info-box-number">
+                                                    <div id="showGwrDp" class="shiny-text-output"></div>
+                                                  </span>
+                                                  </div>'
+                                                ))
                                                 # selectInput(inputId="Gwr2Reference",
                                                 #             label="Reference Value",
                                                 #             choices=c("P-Value"="p",
@@ -610,7 +671,7 @@ tabPanel("Clustering", value="clustering", fluid=TRUE, icon=icon("globe-asia"),
                                                 # )
                                          )
                                        ),
-                                       tableOutput(outputId="GwrTable"),
+                                       # tableOutput(outputId="GwrTable"),
                                        # DT::dataTableOutput(outputId="GwrTable"),
                                        verbatimTextOutput(outputId="GwrSummary")
                              )
@@ -1417,6 +1478,34 @@ output$gwr2 <- renderLeaflet({
 
 })
 
+output$showGwrR2 <- renderText ({
+  as.character(round(rv$GwrDiagnostic$gwR2.adj,digits=7))
+})
+
+output$showGwrAic <- renderText ({
+  as.character(round(rv$GwrDiagnostic$AIC,digits=4))
+})
+
+output$showLmR2 <- renderText ({
+  as.character(round(rv$GwrDiagnostic$lm_R2.adj,digits=7))
+})
+
+output$showLmAic <- renderText ({
+  as.character(round(rv$GwrDiagnostic$lm_AIC,digits=4))
+})
+
+output$showGwrBw <- renderText ({
+  if (input$GwrBandwidth==1) {
+    paste0(as.character(round(rv$GwrDiagnostic$bw,digits=0)), " neighbours")
+  }
+  else {
+    paste0(as.character(round(rv$GwrDiagnostic$bw,digits=0)), " metres")
+  }
+})
+
+output$showGwrDp <- renderText ({
+  as.character(rv$GwrDiagnostic$dp.n)
+})
 
 output$GwrTable <- renderTable(rv$GwrDiagnostic)
 # output$GwrTable <- DT::renderDataTable(rv$GwrDiagnostic)
