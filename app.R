@@ -8,9 +8,9 @@ library(spdep)
 library(rgeos)
 library(sf)
 library(sp)
-library(spdep)
 library(rgdal)
 library(GWmodel)
+library(ggstatsplot)
 #library(reactlog)
 
 #jufri
@@ -236,10 +236,11 @@ ui <- fluidPage(theme=shinytheme("superhero"),
 
 # -----EDA Panel
                 tabPanel("EDA", value="eda", fluid=TRUE, icon=icon("search"),
-                         sidebarLayout(position="right", fluid=TRUE,
-                             sidebarPanel("EDA sidebarPanel", width=3, fluid=TRUE
+                         sidebarLayout(position="left", fluid=TRUE,
+                             sidebarPanel(width=3, fluid=TRUE
                              ),
-                             mainPanel("EDA mainPanel", width=9
+                             mainPanel(width=9, fluid=TRUE
+                                       
                              )
                          )
                 ),
@@ -247,7 +248,7 @@ ui <- fluidPage(theme=shinytheme("superhero"),
 
 # -----ESDA Panel
                 tabPanel("ESDA", value="esda", fluid=TRUE, icon=icon("globe-americas"),
-                         sidebarLayout(position="right", fluid=TRUE,
+                         sidebarLayout(position="left", fluid=TRUE,
                              sidebarPanel(width=3, fluid=TRUE,
                                           fluidRow(
                                           column(5,
@@ -460,7 +461,7 @@ tabPanel("Clustering", value="clustering", fluid=TRUE, icon=icon("globe-asia"),
 
 # -----GWR Panel
                 tabPanel("GWR", value="gwr", fluid=TRUE, icon=icon("laptop-code"),
-                         sidebarLayout(position="right", fluid=TRUE,
+                         sidebarLayout(position="left", fluid=TRUE,
                              sidebarPanel(width=3, fluid=TRUE,
                                           fluidRow(
                                           column(5,
