@@ -12,7 +12,7 @@ library(rgdal)
 library(GWmodel)
 library(ggplot2)
 library(plotly)
-library(crosstalk)
+#library(crosstalk)
 #library(reactlog)
 
 #jufri
@@ -721,10 +721,10 @@ server <- function(input, output, session) {
 # -----EDA functions
 
   sd_coords <- as.data.frame(coordinates(mapmsoa_sp)) %>%
-    rename(lng=V1, lat=V2)
+    rename(long=V1, lat=V2)
   sd <- cbind(mapmsoa_sp@data,sd_coords) %>%
-    select(area_id,prevalence_obese_y6, energy_carb,lng,lat)
-  sdata <- SharedData$new(sd)  
+    select(lat,long,area_id,prevalence_obese_y6, energy_carb)
+  sdata <- highlight_key(sd)
   
   # output$eda1 <- renderPlotly({
   #   
@@ -758,6 +758,10 @@ server <- function(input, output, session) {
 
   output$eda1 <- renderPlotly({
     
+    plot1 <- plot_ly(sdata, x = ~energy_carb, y = ~prevalence_obese_y6) %>% 
+      add_markers(alpha = 0.5) %>% 
+      highlight(on="plotly_selected", off="plotly_deselect")
+    ggplotly(plot1)
     
     # str(sdata)
     # str(sd)
@@ -766,20 +770,26 @@ server <- function(input, output, session) {
     # MeasureY <- as.formula(input$EdaMeasureY)
     
     # plot1 <- ggplot(sdata, aes(as.formula(input$EdaMeasureY), as.formula(input$EdaMeasureX))) +
-    plot1 <- ggplot(sdata, aes(prevalence_obese_y6, energy_carb)) +
-      geom_point()
-    ggplotly(plot1)
+    # plot1 <- ggplot(sdata, aes(prevalence_obese_y6, energy_carb)) +
+    #   geom_point()
+    # ggplotly(plot1)
     
   })
   
   
   output$eda2 <- renderLeaflet({
-     sdata2 <- st_as_sf(sdata$data(withSelection=FALSE, withFilter=TRUE, withKey=FALSE), coords = c("lng", "lat"), crs = 27700)
+    
+    leaflet(sdata) %>%
+      addTiles() %>%
+      addCircles()
+    
+    
+     # sdata2 <- st_as_sf(sdata$data(withSelection=FALSE, withFilter=TRUE, withKey=FALSE), coords = c("lng", "lat"), crs = 27700)
      # str(sdata2)
 
 
-   edaPlot <- tm_shape(sdata2) +
-     tm_dots() +
+   # edaPlot <- tm_shape(sdata2) +
+   #   tm_dots() +
    # tm_fill("area_nm",
    #         title="LISA Cluster",
    #         style="cat",
@@ -796,15 +806,15 @@ server <- function(input, output, session) {
        #         control.position=c("left","bottom"),
        #         colorNA="Black"
        # ) +
-       tmap_options(basemaps=c("Esri.WorldGrayCanvas","Stamen.TonerLite","OpenStreetMap"),
-                    basemaps.alpha=c(0.8,0.5,0.7))
+       # tmap_options(basemaps=c("Esri.WorldGrayCanvas","Stamen.TonerLite","OpenStreetMap"),
+       #              basemaps.alpha=c(0.8,0.5,0.7))
    #    leaflet() %>%
      # edaPlot <- 
      #   leaflet() %>%
        # leafletCRS(code=27700) %>%
        # addMarkers(lng=sdata2$lng,lat=sdata2$lat)
      # tmap_mode("view")
-      tmap_leaflet(edaPlot, in.shiny=TRUE)
+      # tmap_leaflet(edaPlot, in.shiny=TRUE)
       
       # leaflet(eda2,
       #   addTiles() %>%
