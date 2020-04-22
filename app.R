@@ -10,7 +10,9 @@ library(sf)
 library(sp)
 library(rgdal)
 library(GWmodel)
-library(ggstatsplot)
+library(ggplot2)
+library(plotly)
+library(crosstalk)
 #library(reactlog)
 
 #jufri
@@ -220,7 +222,7 @@ varGwrDistance <- c(
 ui <- fluidPage(theme=shinytheme("superhero"),
     
 # -----Navigation Bar
-    navbarPage("Tesco", fluid=TRUE, windowTitle="Tesco Grocery 1.0 Visual Analytics", selected="gwr",
+    navbarPage("Tesco", fluid=TRUE, windowTitle="Tesco Grocery 1.0 Visual Analytics", selected="eda",
                
 
 # -----Data Panel
@@ -237,10 +239,30 @@ ui <- fluidPage(theme=shinytheme("superhero"),
 # -----EDA Panel
                 tabPanel("EDA", value="eda", fluid=TRUE, icon=icon("search"),
                          sidebarLayout(position="left", fluid=TRUE,
-                             sidebarPanel(width=3, fluid=TRUE
+                             sidebarPanel(width=3, fluid=TRUE,
+                                          selectInput(inputId="EdaMeasureY",
+                                                      label="Select Variable Y",
+                                                      choices=varMeasure1,
+                                                      selected="h_nutrients_calories",
+                                                      multiple=FALSE,
+                                                      width="100%"
+                                          ),
+                                          selectInput(inputId="EdaMeasureX",
+                                                      label="Select Variable X",
+                                                      choices=varMeasure1,
+                                                      selected="energy_carb",
+                                                      multiple=FALSE,
+                                                      width="100%"
+                                          )
                              ),
-                             mainPanel(width=9, fluid=TRUE
-                                       
+                             mainPanel(width=9, fluid=TRUE,
+                                       column(6,
+                                       plotlyOutput(outputId="eda1", width = "100%", height = "400px", inline = FALSE)
+                                       ),
+                                       column(6,
+                                       # plotlyOutput("eda2")   
+                                       leafletOutput("eda2")
+                                       )
                              )
                          )
                 ),
@@ -697,7 +719,83 @@ server <- function(input, output, session) {
 
 
 # -----EDA functions
+  # sd_coords <- as.data.frame(coordinates(mapmsoa_sp)) %>%
+  #   rename(lng=V1, lat=V2)
+  # sd <- cbind(mapmsoa_sp@data,mapmsoa_coords)
+    # select(area_id,input$EdaMeasureY,input$EdaMeasureX,V1,V2)
+  sdata <- SharedData$new(mapmsoa_sf) 
+  
+  
+  # output$eda1 <- renderPlotly({
+  #   
+  #   subplot(
+  #     plot_ly(data=sdata, x = as.formula(paste("~",input$EdaMeasureX)), type='box'),
+  #     plotly_empty(),
+  #     plot_ly(data = sdata, x = as.formula(paste("~",input$EdaMeasureX)), y = as.formula(paste("~",input$EdaMeasureY)), type='scatter', mode='markers') %>%
+  #       layout(dragmode = "select") %>%
+  #       highlight("plotly_selected"),
+  #     plot_ly(data = sdata, y = as.formula(paste("~",input$EdaMeasureY)), type='box'),
+  #     nrows = 2, heights = c(.2, .8), widths = c(.8,.2), margin = 0,
+  #     shareX = TRUE, shareY = TRUE) %>%
+  #     layout(showlegend = F)
+  #   
+  # })
+  
+  # output$eda2 <- renderPlotly({
+  #   
+  #   subplot(
+  #     plot_ly(data=sdata, x = as.formula(paste("~",input$EdaMeasureX)), type='box'),
+  #     plotly_empty(),
+  #     plot_ly(data = sdata, x = as.formula(paste("~",input$EdaMeasureX)), y = as.formula(paste("~",input$EdaMeasureY)), type='scatter', mode='markers') %>%
+  #       layout(dragmode = "select") %>%
+  #       highlight("plotly_selected"),
+  #     plot_ly(data = sdata, y = as.formula(paste("~",input$EdaMeasureY)), type='box'),
+  #     nrows = 2, heights = c(.2, .8), widths = c(.8,.2), margin = 0,
+  #     shareX = TRUE, shareY = TRUE) %>%
+  #     layout(showlegend = F)
+  #   
+  # })
 
+  output$eda1 <- renderPlotly({
+    MeasureX <- as.formula(input$EdaMeasureX)
+    MeasureY <- as.formula(input$EdaMeasureY)
+    
+    # plot1 <- ggplot(sdata, aes(as.formula(input$EdaMeasureY), as.formula(input$EdaMeasureX))) +
+    plot1 <- ggplot(sdata, aes(prevalence_obese_y6, energy_carb)) +
+      geom_point()
+    ggplotly(plot1)
+    
+  })
+  
+  
+  # output$eda2 <- renderLeaflet({
+  #    # sdata2 <- sdata$data(withSelection=TRUE, withFilter=TRUE, withKey=FALSE)
+  # 
+  #        
+  #  edaPlot <- tm_shape(sdata) +
+  #  tm_fill("area_nm",
+  #          title="LISA Cluster",
+  #          style="cat",
+  #          palette=colorsBu,
+  #          midpoint=0,
+  #          labels="area_nm",
+  #          id="area_nm",
+  #          alpha=0.8,
+  #          legend.format=list(digits=2)
+  #      ) +
+  #      tm_borders(alpha=0.8
+  #      ) +
+  #      tm_view(view.legend.position=c("right","top"),
+  #              control.position=c("left","bottom"),
+  #              colorNA="Black"
+  #      ) +
+  #      tmap_options(basemaps=c("Esri.WorldGrayCanvas","Stamen.TonerLite","OpenStreetMap"),
+  #                   basemaps.alpha=c(0.8,0.5,0.7))
+  #     tmap_leaflet(edaPlot, in.shiny=TRUE)
+  #       # addTiles() %>%
+  #       # addMarkers(sdata)
+  # 
+  #  })
   
 # -----ESDA functions
   legend <- c("insignificant","low-low", "low-high", "high-low", "high-high")
