@@ -11,8 +11,6 @@ library(sp)
 library(rgdal)
 library(GWmodel)
 library(plotly)
-#library(crosstalk)
-#library(reactlog)
 
 #jufri
 library(ClustGeo)
@@ -21,8 +19,6 @@ library(GGally)
 library(ggdendro)
 library(corrplot)
 
-# tell shiny to log all reactivity
-#options(shiny.reactlog = TRUE)
 
 
 # -----Load data files
@@ -1461,7 +1457,6 @@ output$gwr1 <- renderLeaflet({
   rv$Gwr <- gwr.basic(GwrFormula, data=GwrDataSp, bw=GwrBw, kernel=input$GwrKernel, adaptive=input$GwrBandwidth, p=input$GwrDistance, longlat=FALSE, cv=TRUE)
   var.n<-length(rv$Gwr$lm$coefficients)
   dp.n<-length(rv$Gwr$lm$residuals)
-  #cat(file=stderr(), "variableSelect:", variableSelect, "\n")
   rv$GwrDiagnostic <- as.data.frame(rv$Gwr$GW.diagnostic) %>%
     mutate(lm_RSS=sum(rv$Gwr$lm$residuals^2)) %>%
     mutate(lm_AIC=dp.n*log(lm_RSS/dp.n)+dp.n*log(2*pi)+dp.n+2*(var.n + 1)) %>%
@@ -1472,7 +1467,6 @@ output$gwr1 <- renderLeaflet({
     mutate(dp.n=dp.n)
   GwrSDF <- as.data.frame(rv$Gwr$SDF)
   for (dim_ in rv$variableSelect) {
-    #cat(file=stderr(), "variableSelect:", variableSelect, "\n")
     GwrSDF[, paste0(dim_, "_PV")] <- pt(abs(GwrSDF[, paste0(dim_, "_TV")]),df=length(GwrSDF)-1,lower.tail=FALSE)*2
   }
   rv$GwrResult <- GwrDataSf %>%
@@ -1513,37 +1507,59 @@ output$gwr2 <- renderLeaflet({
   
 
   if (input$Gwr1Reference=="Local_R2") {
-    GwrPV <- input$Gwr1Reference
+    gwr2Plot <- tm_shape(rv$GwrResult) +
+      tm_fill("Stud_residual",
+              title="Studenized Residual",
+              style="fixed",
+              n=5,
+              breaks=c(-1,-0.5,0,0.5,1),
+              palette="RdBu",
+              midpoint=0,
+              id="area_nm",
+              alpha=0.8,
+              legend.format=list(digits=3)
+      ) +
+      tm_borders(alpha=0.8
+      ) +
+      tm_view(view.legend.position=c("right","top"),
+              control.position=c("left","bottom"),
+              colorNA="Black"
+      ) +
+      tmap_options(basemaps=c("Esri.WorldGrayCanvas","Stamen.TonerLite","OpenStreetMap"),
+                   basemaps.alpha=c(0.8,0.5,0.7)
+      ) +
+      tm_shape(rv$subsetGwrView) +
+      tm_borders(col="black",
+                 lwd=3)
   }
   else {
     GwrPV <- paste0(input$Gwr1Reference, "_PV")
+    gwr2Plot <- tm_shape(rv$GwrResult) +
+      tm_fill(GwrPV,
+              title="P-value",
+              style="fixed",
+              n=5,
+              breaks=c(0,0.001,0.01,0.05,0.1,1),
+              palette=colorsNBu,
+              midpoint=0,
+              id="area_nm",
+              alpha=0.8,
+              legend.format=list(digits=3)
+      ) +
+      tm_borders(alpha=0.8
+      ) +
+      tm_view(view.legend.position=c("right","top"),
+              control.position=c("left","bottom"),
+              colorNA="Black"
+      ) +
+      tmap_options(basemaps=c("Esri.WorldGrayCanvas","Stamen.TonerLite","OpenStreetMap"),
+                   basemaps.alpha=c(0.8,0.5,0.7)
+      ) +
+      tm_shape(rv$subsetGwrView) +
+      tm_borders(col="black",
+                 lwd=3)
   }
-  
 
-  gwr2Plot <- tm_shape(rv$GwrResult) +
-    tm_fill(GwrPV,
-            title="P-value",
-            style="fixed",
-            n=5,
-            breaks=c(0,0.001,0.01,0.05,0.1,1),
-            palette=colorsNBu,
-            midpoint=0,
-            id="area_nm",
-            alpha=0.8,
-            legend.format=list(digits=3)
-    ) +
-    tm_borders(alpha=0.8
-    ) +
-    tm_view(view.legend.position=c("right","top"),
-            control.position=c("left","bottom"),
-            colorNA="Black"
-    ) +
-    tmap_options(basemaps=c("Esri.WorldGrayCanvas","Stamen.TonerLite","OpenStreetMap"),
-                 basemaps.alpha=c(0.8,0.5,0.7)
-    ) +
-    tm_shape(rv$subsetGwrView) +
-    tm_borders(col="black",
-               lwd=3)
   tmap_leaflet(gwr2Plot, in.shiny=TRUE)
   
 
@@ -1578,7 +1594,7 @@ output$showGwrDp <- renderText ({
   as.character(rv$GwrDiagnostic$dp.n)
 })
 
-output$GwrTable <- renderTable(rv$GwrDiagnostic)
+# output$GwrTable <- renderTable(rv$GwrDiagnostic)
 # output$GwrTable <- DT::renderDataTable(rv$GwrDiagnostic)
 
 output$GwrSummary <- renderPrint({
