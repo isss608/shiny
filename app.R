@@ -772,6 +772,7 @@ observe({
   colorsBu <- c("#ffffff","#bdd7e7","#6baed6","#3182bd","#08519c")
   colorsNBu <- c("#08519c","#3182bd","#6baed6","#bdd7e7","#ffffff")
   colorsLi <- c("#ffffff","#08519c","#6baed6","#fb6a4a","#a50f15")
+  colorsNLi <- c("#fddbc7","#f4a582","#d6604d","#b2182b","#2166ac","#4393c3","#92c5de","#d1e5f0")
   
   output$lisa <- renderLeaflet({
     
@@ -1508,12 +1509,12 @@ output$gwr2 <- renderLeaflet({
 
   if (input$Gwr1Reference=="Local_R2") {
     gwr2Plot <- tm_shape(rv$GwrResult) +
-      tm_fill("Stud_residual",
-              title="Studenized Residual",
-              style="fixed",
-              n=5,
-              breaks=c(-1,-0.5,0,0.5,1),
-              palette="RdBu",
+      tm_fill("residual",
+              title="Residual",
+              style="quantile",
+              n=8,
+              # breaks=c(-1,-0.999,0,0.999,1),
+              palette=colorsNLi,
               midpoint=0,
               id="area_nm",
               alpha=0.8,
