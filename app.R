@@ -10,7 +10,6 @@ library(sf)
 library(sp)
 library(rgdal)
 library(GWmodel)
-library(ggplot2)
 library(plotly)
 #library(crosstalk)
 #library(reactlog)
@@ -38,6 +37,10 @@ load("data/maplad_sf.rda")
 load("data/mapward_sf.rda")
 load("data/mapmsoa_sf.rda")
 load("data/maplsoa_sf.rda")
+load("data/maplad_sp84.rda")
+load("data/mapward_sp84.rda")
+load("data/mapmsoa_sp84.rda")
+load("data/maplsoa_sp84.rda")
 
 
 # -----All Global Parameters here
@@ -240,6 +243,13 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                 tabPanel("EDA", value="eda", fluid=TRUE, icon=icon("search"),
                          sidebarLayout(position="left", fluid=TRUE,
                              sidebarPanel(width=3, fluid=TRUE,
+                                          selectInput(inputId="EdaLod",
+                                                      label="EDA Level",
+                                                      choices=varLod,
+                                                      selected="LAD",
+                                                      multiple=FALSE,
+                                                      width="100%"
+                                          ),
                                           selectInput(inputId="EdaMeasureY",
                                                       label="Select Variable Y",
                                                       choices=varMeasure1,
@@ -719,106 +729,43 @@ server <- function(input, output, session) {
 
 
 # -----EDA functions
-
-  sd_coords <- as.data.frame(coordinates(mapmsoa_sp)) %>%
+observe({
+  input$EdaMeasureY
+  input$EdaMeasureX
+  if (input$EdaLod=="LAD") {
+    edamap=maplad_sp84
+  }
+  else if (input$EdaLod=="Ward") {
+    edamap=mapward_sp84
+  } else if (input$EdaLod=="MSOA") {
+    edamap=mapmsoa_sp84
+  }
+  else {
+    edamap=maplsoa_sp84
+  }
+  sd_coords <- as.data.frame(coordinates(edamap)) %>%
     rename(long=V1, lat=V2)
-  sd <- cbind(mapmsoa_sp@data,sd_coords) %>%
-    select(lat,long,area_id,prevalence_obese_y6, energy_carb)
-  sdata <- highlight_key(sd)
-  
-  # output$eda1 <- renderPlotly({
-  #   
-  #   subplot(
-  #     plot_ly(data=sdata, x = as.formula(paste("~",input$EdaMeasureX)), type='box'),
-  #     plotly_empty(),
-  #     plot_ly(data = sdata, x = as.formula(paste("~",input$EdaMeasureX)), y = as.formula(paste("~",input$EdaMeasureY)), type='scatter', mode='markers') %>%
-  #       layout(dragmode = "select") %>%
-  #       highlight("plotly_selected"),
-  #     plot_ly(data = sdata, y = as.formula(paste("~",input$EdaMeasureY)), type='box'),
-  #     nrows = 2, heights = c(.2, .8), widths = c(.8,.2), margin = 0,
-  #     shareX = TRUE, shareY = TRUE) %>%
-  #     layout(showlegend = F)
-  #   
-  # })
-  
-  # output$eda2 <- renderPlotly({
-  #   
-  #   subplot(
-  #     plot_ly(data=sdata, x = as.formula(paste("~",input$EdaMeasureX)), type='box'),
-  #     plotly_empty(),
-  #     plot_ly(data = sdata, x = as.formula(paste("~",input$EdaMeasureX)), y = as.formula(paste("~",input$EdaMeasureY)), type='scatter', mode='markers') %>%
-  #       layout(dragmode = "select") %>%
-  #       highlight("plotly_selected"),
-  #     plot_ly(data = sdata, y = as.formula(paste("~",input$EdaMeasureY)), type='box'),
-  #     nrows = 2, heights = c(.2, .8), widths = c(.8,.2), margin = 0,
-  #     shareX = TRUE, shareY = TRUE) %>%
-  #     layout(showlegend = F)
-  #   
-  # })
+  sd <- cbind(edamap@data,sd_coords)
+  rv$sdata <- highlight_key(sd)
+})
 
+  
   output$eda1 <- renderPlotly({
     
-    plot1 <- plot_ly(sdata, x = ~energy_carb, y = ~prevalence_obese_y6) %>% 
-      add_markers(alpha = 0.5) %>% 
+    plot1 <- ggplot(rv$sdata, aes_string(input$EdaMeasureX, input$EdaMeasureY)) +
+      geom_point(alpha=0.5,
+                 color="DarkBlue")
+    ggplotly(plot1) %>%
       highlight(on="plotly_selected", off="plotly_deselect")
-    ggplotly(plot1)
-    
-    # str(sdata)
-    # str(sd)
-    
-    # MeasureX <- as.formula(input$EdaMeasureX)
-    # MeasureY <- as.formula(input$EdaMeasureY)
-    
-    # plot1 <- ggplot(sdata, aes(as.formula(input$EdaMeasureY), as.formula(input$EdaMeasureX))) +
-    # plot1 <- ggplot(sdata, aes(prevalence_obese_y6, energy_carb)) +
-    #   geom_point()
-    # ggplotly(plot1)
-    
+
   })
   
   
   output$eda2 <- renderLeaflet({
     
-    leaflet(sdata) %>%
-      addTiles() %>%
-      addCircles()
-    
-    
-     # sdata2 <- st_as_sf(sdata$data(withSelection=FALSE, withFilter=TRUE, withKey=FALSE), coords = c("lng", "lat"), crs = 27700)
-     # str(sdata2)
-
-
-   # edaPlot <- tm_shape(sdata2) +
-   #   tm_dots() +
-   # tm_fill("area_nm",
-   #         title="LISA Cluster",
-   #         style="cat",
-   #         palette=colorsBu,
-   #         midpoint=0,
-   #         labels="area_nm",
-   #         id="area_nm",
-   #         alpha=0.8,
-   #         legend.format=list(digits=2)
-   #     ) +
-   #     tm_borders(alpha=0.8
-   #     ) +
-       # tm_view(view.legend.position=c("right","top"),
-       #         control.position=c("left","bottom"),
-       #         colorNA="Black"
-       # ) +
-       # tmap_options(basemaps=c("Esri.WorldGrayCanvas","Stamen.TonerLite","OpenStreetMap"),
-       #              basemaps.alpha=c(0.8,0.5,0.7))
-   #    leaflet() %>%
-     # edaPlot <- 
-     #   leaflet() %>%
-       # leafletCRS(code=27700) %>%
-       # addMarkers(lng=sdata2$lng,lat=sdata2$lat)
-     # tmap_mode("view")
-      # tmap_leaflet(edaPlot, in.shiny=TRUE)
-      
-      # leaflet(eda2,
-      #   addTiles() %>%
-      #   addMarkers(sdata2,lng=lng,lat=lat))
+    leaflet(rv$sdata) %>%
+      addProviderTiles("Stamen.TonerLite", group = "Toner by Stamen") %>%
+      addCircles(lat=~lat,lng=~long)
 
    })
   
