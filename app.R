@@ -749,7 +749,7 @@ observe({
   output$eda1 <- renderPlotly({
     
     plot1 <- ggplot(rv$sdata, aes_string(input$EdaMeasureX, input$EdaMeasureY)) +
-      geom_point(alpha=0.5,
+      geom_point(alpha=0.6,
                  color="DarkBlue")
     ggplotly(plot1) %>%
       highlight(on="plotly_selected", off="plotly_deselect")
@@ -761,7 +761,7 @@ observe({
     
     leaflet(rv$sdata) %>%
       addProviderTiles("Stamen.TonerLite", group = "Toner by Stamen") %>%
-      addCircles(lat=~lat,lng=~long)
+      addCircles(lat=~lat,lng=~long, color="DarkBlue")
 
    })
   
