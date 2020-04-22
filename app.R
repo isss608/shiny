@@ -719,12 +719,12 @@ server <- function(input, output, session) {
 
 
 # -----EDA functions
-  # sd_coords <- as.data.frame(coordinates(mapmsoa_sp)) %>%
-  #   rename(lng=V1, lat=V2)
-  # sd <- cbind(mapmsoa_sp@data,mapmsoa_coords)
-    # select(area_id,input$EdaMeasureY,input$EdaMeasureX,V1,V2)
-  sdata <- SharedData$new(mapmsoa_sf) 
-  
+
+  sd_coords <- as.data.frame(coordinates(mapmsoa_sp)) %>%
+    rename(lng=V1, lat=V2)
+  sd <- cbind(mapmsoa_sp@data,sd_coords) %>%
+    select(area_id,prevalence_obese_y6, energy_carb,lng,lat)
+  sdata <- SharedData$new(sd)  
   
   # output$eda1 <- renderPlotly({
   #   
@@ -757,8 +757,13 @@ server <- function(input, output, session) {
   # })
 
   output$eda1 <- renderPlotly({
-    MeasureX <- as.formula(input$EdaMeasureX)
-    MeasureY <- as.formula(input$EdaMeasureY)
+    
+    
+    # str(sdata)
+    # str(sd)
+    
+    # MeasureX <- as.formula(input$EdaMeasureX)
+    # MeasureY <- as.formula(input$EdaMeasureY)
     
     # plot1 <- ggplot(sdata, aes(as.formula(input$EdaMeasureY), as.formula(input$EdaMeasureX))) +
     plot1 <- ggplot(sdata, aes(prevalence_obese_y6, energy_carb)) +
@@ -768,34 +773,44 @@ server <- function(input, output, session) {
   })
   
   
-  # output$eda2 <- renderLeaflet({
-  #    # sdata2 <- sdata$data(withSelection=TRUE, withFilter=TRUE, withKey=FALSE)
-  # 
-  #        
-  #  edaPlot <- tm_shape(sdata) +
-  #  tm_fill("area_nm",
-  #          title="LISA Cluster",
-  #          style="cat",
-  #          palette=colorsBu,
-  #          midpoint=0,
-  #          labels="area_nm",
-  #          id="area_nm",
-  #          alpha=0.8,
-  #          legend.format=list(digits=2)
-  #      ) +
-  #      tm_borders(alpha=0.8
-  #      ) +
-  #      tm_view(view.legend.position=c("right","top"),
-  #              control.position=c("left","bottom"),
-  #              colorNA="Black"
-  #      ) +
-  #      tmap_options(basemaps=c("Esri.WorldGrayCanvas","Stamen.TonerLite","OpenStreetMap"),
-  #                   basemaps.alpha=c(0.8,0.5,0.7))
-  #     tmap_leaflet(edaPlot, in.shiny=TRUE)
-  #       # addTiles() %>%
-  #       # addMarkers(sdata)
-  # 
-  #  })
+  output$eda2 <- renderLeaflet({
+     sdata2 <- st_as_sf(sdata$data(withSelection=FALSE, withFilter=TRUE, withKey=FALSE), coords = c("lng", "lat"), crs = 27700)
+     # str(sdata2)
+
+
+   edaPlot <- tm_shape(sdata2) +
+     tm_dots() +
+   # tm_fill("area_nm",
+   #         title="LISA Cluster",
+   #         style="cat",
+   #         palette=colorsBu,
+   #         midpoint=0,
+   #         labels="area_nm",
+   #         id="area_nm",
+   #         alpha=0.8,
+   #         legend.format=list(digits=2)
+   #     ) +
+   #     tm_borders(alpha=0.8
+   #     ) +
+       # tm_view(view.legend.position=c("right","top"),
+       #         control.position=c("left","bottom"),
+       #         colorNA="Black"
+       # ) +
+       tmap_options(basemaps=c("Esri.WorldGrayCanvas","Stamen.TonerLite","OpenStreetMap"),
+                    basemaps.alpha=c(0.8,0.5,0.7))
+   #    leaflet() %>%
+     # edaPlot <- 
+     #   leaflet() %>%
+       # leafletCRS(code=27700) %>%
+       # addMarkers(lng=sdata2$lng,lat=sdata2$lat)
+     # tmap_mode("view")
+      tmap_leaflet(edaPlot, in.shiny=TRUE)
+      
+      # leaflet(eda2,
+      #   addTiles() %>%
+      #   addMarkers(sdata2,lng=lng,lat=lat))
+
+   })
   
 # -----ESDA functions
   legend <- c("insignificant","low-low", "low-high", "high-low", "high-high")
