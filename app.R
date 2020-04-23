@@ -18,6 +18,11 @@ library(dendextend)
 library(GGally)
 library(ggdendro)
 library(corrplot)
+library(DT)
+library(shinyWidgets)
+library(RColorBrewer)
+# library(crosstalk)
+#jufri
 
 
 
@@ -221,24 +226,15 @@ varGwrDistance <- c(
 ui <- fluidPage(theme=shinytheme("superhero"),
     
 # -----Navigation Bar
-    navbarPage("Tesco", fluid=TRUE, windowTitle="Tesco Grocery 1.0 Visual Analytics", selected="eda",
+    navbarPage("SGSAS", fluid=TRUE, windowTitle="Simple Geo-Spatial Analysis using R and Shiny ", selected="eda",
                
-
-# -----Data Panel
-               tabPanel("Data", value="data", fluid=TRUE, icon=icon("database"),
-                         sidebarLayout(position="right", fluid=TRUE,
-                             sidebarPanel("DM sidebarPanel", width=3, fluid=TRUE
-                             ),
-                             mainPanel("DM mainPanel", width=9
-                             )
-                         )
-                ),
-
 
 # -----EDA Panel
                 tabPanel("EDA", value="eda", fluid=TRUE, icon=icon("search"),
                          sidebarLayout(position="left", fluid=TRUE,
                              sidebarPanel(width=3, fluid=TRUE,
+                                          conditionalPanel(
+                                            'input.EDAset === "Bivariate Analysis"',
                                           selectInput(inputId="EdaLod",
                                                       label="EDA Level",
                                                       choices=varLod,
@@ -260,15 +256,59 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                                       multiple=FALSE,
                                                       width="100%"
                                           )
+                                          ),
+                                          
+                                          conditionalPanel(
+                                            'input.EDAset === "Correlation Analysis"',
+                                            selectInput(inputId="inLodEDA",
+                                                        label="EDA Level",
+                                                        choices=varLod,
+                                                        selected="LAD",
+                                                        multiple=FALSE,
+                                                        width="100%"
+                                            ),
+                                          selectInput(inputId="inMeasureClusterEDA",
+                                                      label="Measure",
+                                                      choices=varMeasure1,
+                                                      selected=c("Fat"="fat",
+                                                                 "Saturate"="saturate",
+                                                                 "Salt"="salt",
+                                                                 "Sugar"="sugar",
+                                                                 "Protein"="protein",
+                                                                 "Carb"="carb",
+                                                                 "Fibre"="fibre",
+                                                                 "Alcohol"="alcohol"),
+                                                      multiple=TRUE,
+                                                      width="100%"
+                                          ),
+                                          )
+                                          
                              ),
                              mainPanel(width=9, fluid=TRUE,
-                                       column(6,
-                                       plotlyOutput(outputId="eda1", width = "100%", height = "400px", inline = FALSE)
-                                       ),
-                                       column(6,
-                                       # plotlyOutput("eda2")   
-                                       leafletOutput("eda2")
+                                       tabsetPanel(
+                                         id = 'EDAset',
+                                         tabPanel("Bivariate Analysis",
+                                           column(6,
+                                                plotlyOutput(outputId="eda1", width = "100%", height = "400px", inline = FALSE)
+                                                ),
+                                           column(6,
+                                                # plotlyOutput("eda2")   
+                                                leafletOutput("eda2")
+                                                )
+                                           )
+                                          ,
+                                         tabPanel("Correlation Analysis",
+                                                   plotOutput("corrplotEDA",
+                                                   width="800px",
+                                                   height="800px")
+                                                  #"asd"
+                                         )
+                                                  
+                                         # tabPanel("Lower Super Output Area", DT::dataTableOutput("mytable4"))
+                                          # tabPanel("asd2",
+                                          # )
                                        )
+                                      
                              )
                          )
                 ),
@@ -430,56 +470,85 @@ tabPanel("Clustering", value="clustering", fluid=TRUE, icon=icon("globe-asia"),
                                     conditionalPanel(condition="input.inShowCorrPlot",
                                                      plotOutput("corrplot")
                                     ),
+                                    radioButtons(inputId = "clustMethod",
+                                                 label = "Select Clustering Method",
+                                                 inline=TRUE,
+                                                 choiceNames = c("Hierarchical","Geo Spatial","Skater"),
+                                                 choiceValues = c("HC","GS","SK"),
+                                                 selected = "HC"),
                                     sliderInput(inputId="inClusterSize", label="Cluster Size", min=1, max=10,
                                                 value=5, step=1, round=TRUE
                                     ),
-                                    plotOutput("findkplot", height = 300),
+                                    checkboxInput(inputId="inShowFindK", label="Show Cluster Size Suggestion", value=FALSE),
+                                    conditionalPanel(condition="input.inShowFindK",
+                                                     plotOutput("findkplot", height = 300)
+                                    ),
+                                    conditionalPanel(condition="input.clustMethod=='HC'",
+                                                     selectInput(inputId="inAggloMethod",
+                                                                 label="Agglomeration Method",
+                                                                 choices=c("ward.D"="ward.D",
+                                                                           "ward.D2"="ward.D2",
+                                                                           "single"="single",
+                                                                           "complete"="complete",
+                                                                           "average"="average",
+                                                                           "mcquitty"="mcquitty",
+                                                                           "median"="median",
+                                                                           "centroid"="centroid"
+                                                                 ),
+                                                                 selected="ward.D"
+                                                     ),
+                                                     checkboxInput(inputId="inShowAggloMethod", label="Show Method Suggestion", value=FALSE),
+                                                     conditionalPanel(condition="input.inShowAggloMethod",
+                                                                      tableOutput("aggloplot")
+                                                     )
+                                    ),
+                                    conditionalPanel(condition="input.clustMethod=='GS'",
+                                                     sliderInput(inputId = "inAlpha", label = "Mixing Factor", min = 0, 
+                                                                 max = 1, value = 0.4,width="100%", step=0.05),
+                                                     checkboxInput(inputId="inShowMixFactor", label="Show Mix Factor Suggestion", value=FALSE),
+                                                     conditionalPanel(condition="input.inShowMixFactor",
+                                                                      plotOutput("alphaplot", height = 300)
+                                                     )
+                                    ),
+                                    conditionalPanel(condition="input.clustMethod=='SK'",
+                                                     selectInput(inputId="inSkaterMethod",
+                                                                 label="Method",
+                                                                 choices=c("euclidean"="euclidean",
+                                                                           "maximum"="maximum",
+                                                                           "manhattan"="manhattan",
+                                                                           "canberra"="canberra",
+                                                                           "binary"="binary",
+                                                                           #"mahalanobis"="mahalanobis"
+                                                                           "minkowski"="minkowski"
+                                                                 ),
+                                                                 selected="minkowski"
+                                                     ),
+                                                     conditionalPanel(condition="input.inSkaterMethod=='minkowski'",
+                                                                      sliderInput(inputId = "inMinkowski", label = "Minkowski Power", min = 0, 
+                                                                                  max = 10, value = 0.4,width="100%", step=0.05)
+                                                     )
+                                    ),
                        ),
                        mainPanel(width=9,
                                  fluidRow(
                                    column(6,
-                                          radioButtons(inputId = "clustMethod",
-                                                       label = "Select Clustering Method",
-                                                       choiceNames = c("Hierarchical Clustering","Geo Spatial Clustering","Skater Clustering"),
-                                                       choiceValues = c("HC","GS","SK"),
-                                                       selected = "HC"),
                                           leafletOutput("cluster_left"),
-                                          conditionalPanel(condition="input.clustMethod=='GS'",
-                                                           sliderInput(inputId = "inAlpha", label = "Mixing Factor", min = 0, 
-                                                                       max = 1, value = 0.4,width="100%", step=0.1),
-                                                           plotOutput("alphaplot", height = 300)
-                                          ),
-                                          conditionalPanel(condition="input.clustMethod=='HC'",
-                                                           selectInput(inputId="inAggloMethod",
-                                                                       label="Agglomeration Method",
-                                                                       choices=c("ward.D"="ward.D",
-                                                                                 "ward.D2"="ward.D2",
-                                                                                 "single"="single",
-                                                                                 "complete"="complete",
-                                                                                 "average"="average",
-                                                                                 "mcquitty"="mcquitty",
-                                                                                 "median"="median",
-                                                                                 "centroid"="centroid"
-                                                                       ),
-                                                                       selected="ward.D"
-                                                           ),
-                                                           tableOutput("aggloplot")
-                                          )            
-                                   ),
-                                   column(6,
-                                          plotOutput("cluster_right"),
                                           conditionalPanel(condition="input.inLodc!='LSOA'",
-                                                           plotOutput("dendoplot")
+                                                           plotlyOutput("dendoplot")
                                           ),
                                           conditionalPanel(condition="input.inLodc=='LSOA'",
                                                            "Dendogram not recommended for LSOA. More than 4000 records."
                                           ),
-                                          radioButtons(inputId = "inDendoGraph",
-                                                       label = "Graph type",
-                                                       inline = TRUE, 
-                                                       choiceNames = c("Tree", "Fan"),
-                                                       choiceValues = c("tree","fan"),
-                                                       selected = "tree"),
+                                          # radioButtons(inputId = "inDendoGraph",
+                                          #              label = "Graph type",
+                                          #              inline = TRUE, 
+                                          #              choiceNames = c("Tree", "Fan"),
+                                          #              choiceValues = c("tree","fan"),
+                                          #              selected = "tree"
+                                          # ),            
+                                   ),
+                                   column(6,
+                                          plotlyOutput("cluster_right")
                                    )
                                  )
                        )
@@ -705,7 +774,43 @@ tabPanel("Clustering", value="clustering", fluid=TRUE, icon=icon("globe-asia"),
                                        verbatimTextOutput(outputId="GwrSummary")
                              )
                          )
-                )
+                ),
+
+
+# -----Data Panel
+tabPanel("Data", value="data", fluid=TRUE, icon=icon("database"),
+         sidebarLayout(position="left", fluid=TRUE,
+                       sidebarPanel(width=3,
+                                    pickerInput(inputId="inDataSelect",
+                                                label="Columns",
+                                                choices=c("Area Id"= "area_id", "Area Nm"= "area_nm", "Lad Id"= "lad_id", "Lad Nm"= "lad_nm", varMeasure1),
+                                                selected=c("Area Id"= "area_id", "Area Nm"= "area_nm", "Lad Id"= "lad_id", "Lad Nm"= "lad_nm",
+                                                           "Fat"="fat",
+                                                           "Saturate"="saturate",
+                                                           "Salt"="salt",
+                                                           "Sugar"="sugar",
+                                                           "Protein"="protein",
+                                                           "Carb"="carb",
+                                                           "Fibre"="fibre",
+                                                           "Alcohol"="alcohol"),
+                                                options = list(`actions-box` = TRUE),
+                                                multiple=TRUE,
+                                                width="100%"
+                                    ),
+                                    checkboxInput(inputId="inShowColumnFilter", label="Show Column Filter", value=FALSE)
+                       ),
+                       mainPanel("Data Panel", width=9,
+                                 tabsetPanel(
+                                   id = 'dataset',
+                                   tabPanel("Local Authority District", DT::dataTableOutput("mytable1")),
+                                   tabPanel("Ward", DT::dataTableOutput("mytable2")),
+                                   tabPanel("Middle Super Output Area", DT::dataTableOutput("mytable3")),
+                                   tabPanel("Lower Super Output Area", DT::dataTableOutput("mytable4"))
+                                 )
+                       )
+         )
+)
+
     )
 )
 
@@ -721,8 +826,54 @@ server <- function(input, output, session) {
   rv <- reactiveValues()
 
 
-# -----Data functions
-
+  # -----Data functions
+  # choose columns to display
+  #diamonds2 = diamonds[sample(nrow(diamonds), 1000), ]
+  
+  output$mytable1 <- DT::renderDataTable({
+    if(input$inShowColumnFilter){
+      filterVar='top'
+    }else{
+      filterVar='none'
+    }
+    DF <- as.data.frame(maplad_sp)
+    DT::datatable(DF[, input$inDataSelect, drop = FALSE],filter = filterVar,style = "bootstrap")
+  })
+  
+  # sorted columns are colored now because CSS are attached to them
+  output$mytable2 <- DT::renderDataTable({
+    if(input$inShowColumnFilter){
+      filterVar='top'
+    }else{
+      filterVar='none'
+    }
+    DF <- as.data.frame(mapward_sp)
+    DT::datatable(DF[, input$inDataSelect, drop = FALSE],filter = filterVar,style = "bootstrap")
+  })
+  
+  # customize the length drop-down menu; display 5 rows per page by default
+  output$mytable3 <- DT::renderDataTable({
+    if(input$inShowColumnFilter){
+      filterVar='top'
+    }else{
+      filterVar='none'
+    }
+    DF <- as.data.frame(mapmsoa_sp)
+    DT::datatable(DF[, input$inDataSelect, drop = FALSE],filter = filterVar,style = "bootstrap")
+  })
+  
+  # customize the length drop-down menu; display 5 rows per page by default 
+  output$mytable4 <- DT::renderDataTable({
+    if(input$inShowColumnFilter){
+      filterVar='top'
+    }else{
+      filterVar='none'
+    }
+    
+    DF <- as.data.frame(maplsoa_sp)
+    DT::datatable(DF[, input$inDataSelect, drop = FALSE],filter = filterVar,style = "bootstrap")
+  })
+  
 
 # -----EDA functions
 observe({
@@ -1026,21 +1177,44 @@ observe({
 
 
 # -----Clustering functions
+
 clusterset <- "global"
 
 clustersetSelect <- reactive({
-  if (input$inLodc=="LAD") {
+  if (input$inLodc=="LAD" | input$inLodEDA=="LAD") {
     maplad_sp
   }
-  else if (input$inLodc=="Ward") {
+  else if (input$inLodc=="Ward" | input$inLodEDA=="Ward") {
     mapward_sp
   }
-  else if (input$inLodc=="MSOA") {
+  else if (input$inLodc=="MSOA" | input$inLodEDA=="MSOA") {
     mapmsoa_sp 
   }
   else {
     maplsoa_sp 
   }
+})
+
+output$corrplotEDA <- renderPlot({
+  
+  clusterset <- clustersetSelect()
+  
+  vars <- input$inMeasureClusterEDA
+  #  str(input$inMeasure2)
+  sdat_corr <- data.frame(scale(as.data.frame(clusterset)[,vars]))
+  
+  clust.cor = cor(sdat_corr)
+  
+  corrplot.mixed(clust.cor, 
+                 lower = "ellipse", 
+                 upper = "number",
+                 #p.mat = ward.sig$p,
+                 sig.level = .05,
+                 tl.pos = "lt",
+                 bg = "white",
+                 diag = "l",
+                 order="AOE",
+                 tl.col = "black")
 })
 
 output$cluster_left <- renderLeaflet({
@@ -1060,7 +1234,7 @@ output$cluster_left <- renderLeaflet({
     
     mpsz.mst <- mstree(clusterset.w)
     
-    clusterGrp <- skater(mpsz.mst[,1:2],sdat,input$inClusterSize-1)
+    clusterGrp <- skater(mpsz.mst[,1:2],sdat,input$inClusterSize-1,method = input$inSkaterMethod,p=input$inMinkowski)
     
     groups <- as.factor(clusterGrp$groups)
     #clusterset$cluster <- as.matrix(groups)
@@ -1102,7 +1276,7 @@ output$cluster_left <- renderLeaflet({
   } 
   
   clusterPlot <- tm_shape(clusterset) +
-    tm_polygons("cluster", title="Clusters", id="area_nm") +
+    tm_polygons("cluster", title="Clusters", id="area_nm", palette=brewer.pal(n = input$inClusterSize , name = "RdYlBu")) +
     tm_format("World") 
   # +
   # tm_borders(alpha=0.8
@@ -1128,7 +1302,7 @@ output$findkplot <- renderPlot({
   sdat <- data.frame(scale(as.data.frame(clusterset)[,vars]))
   
   D0 <- dist(sdat, method = 'euclidean')
-  tesco_clust <- hclust(D0, method = "ward.D")
+  tesco_clust <- hclust(D0, method = input$inAggloMethod)
   num_k <- find_k(tesco_clust)
   plot(num_k)
   
@@ -1156,34 +1330,64 @@ output$corrplot <- renderPlot({
                  tl.col = "black")
 })
 
-output$cluster_right <- renderPlot({
+
+output$cluster_right <- renderPlotly({
   
   #clusterset <- clustersetSelect()
   #l_clusterset <- clusterset
+  #dlod <- input$inLodc
   vars <-  input$inMeasureCluster
   k <- input$inClusterSize
   m <- input$clustMethod
   inAlpha <- input$inAlpha
+  angglo <- input$inAggloMethod
+  ism <- input$inSkaterMethod
+  im <- input$inMinkowski
   #  str(input$inMeasure2)
+  
+  if (input$inLodc!="LAD") {
+    if (input$inLadc!="All") {
+      clusterset <- clusterset[clusterset$lad_nm==input$inLadc,] 
+    }
+  } 
   sdat2 <- data.frame(scale(as.data.frame(clusterset)[,vars]))
   
   sdat2["cluster"] <- as.factor(clusterset$cluster)
+  sdat2["area_nm"] <- as.factor(clusterset$area_nm)
   #str(sdat2$cluster)
+  
+  
   
   # bp <- ggplot(sdat2, aes(x=dose, y=len, group=cluster)) + 
   #   geom_boxplot(aes(fill=dose))
   # bp
-  ggparcoord(data = sdat2,
-             columns = c(1:(ncol(sdat2)-1)),
-             groupColumn = "cluster",
-             scale = "uniminmax",
-             boxplot = TRUE,
-             title = "Parallel Coord. Tesco Measures") +
+  
+  # #str(clusterset)
+  # 
+  # D <- dist(sdat, method = 'euclidean')
+  # 
+  # hc  <- hclust(D, input$inAggloMethod)
+  # hc$labels <- as.factor(clusterset$area_nm)
+  numCol=(ncol(sdat2)-1)-1
+  
+  p <- ggparcoord(data = sdat2,
+                  columns = c(1:numCol),
+                  groupColumn = "cluster",
+                  scale = "uniminmax",
+                  #boxplot = TRUE,
+                  title = "Parallel Coordinates: Tesco Measures") +
     theme(axis.text.x = element_text(angle = 90),
           axis.text.y=element_blank(),
           axis.ticks.x=element_blank(),
-          axis.ticks.y=element_blank())+
-    facet_wrap(~ cluster)
+          axis.ticks.y=element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank(),
+          panel.grid.minor = element_blank()
+    )+
+    aes(text = paste('Area nm: ', sdat2$area_nm, '<br>Cluster:',cluster))+
+    scale_colour_brewer(palette="RdYlBu")+
+    facet_wrap(~ cluster)+
+    geom_boxplot(fill='#999999')
   
   # boxplot(sdat2[,1:(ncol(sdat2)-1)],
   #         main = "Multiple boxplots for comparision",
@@ -1197,6 +1401,7 @@ output$cluster_right <- renderPlot({
   # )+
   #   facet_wrap(~ cluster)
   
+  ggplotly(p)
   
 })
 
@@ -1238,7 +1443,7 @@ output$aggloplot <- renderTable({
   
 })
 
-output$dendoplot <- renderPlot({ 
+output$dendoplot <- renderPlotly({ 
   
   dendro_data_k <- function(hc, k) {
     
@@ -1368,28 +1573,40 @@ output$dendoplot <- renderPlot({
     
     D <- dist(sdat, method = 'euclidean')
     
-    hc  <- hclust(D)
+    hc  <- hclust(D, input$inAggloMethod)
     hc$labels <- as.factor(clusterset$area_nm)
     
     hcdata <- dendro_data_k(hc, input$inClusterSize)
     
-    if(input$inDendoGraph=='tree'){
-      p <- plot_ggdendro(hcdata,
-                         direction   = "lr",
-                         expand.y    = 0.2)
-      p
-    } else {
-      p <- plot_ggdendro(hcdata,
-                         fan         = TRUE,
-                         #scale.color = cols,
-                         label.size  = 2,
-                         nudge.label = 0.02,
-                         expand.y    = 0.4)
-      
-      mytheme <- theme(panel.background = element_rect(fill = "white"))
-      
-      p + theme_void() + mytheme
-    }
+    #if(input$inDendoGraph=='tree'){
+    p <- plot_ggdendro(hcdata,
+                       direction   = "rl",
+                       expand.y    = 0.1)
+    
+    p <- p+theme(
+      axis.text.y=element_blank(),
+      axis.ticks.y=element_blank(),
+      axis.title.x = element_blank(),
+      axis.title.y = element_blank()
+    )
+    p <- p + ggtitle("Dendogram: Tesco Measures")
+    p <- p +     scale_colour_brewer(palette="RdYlBu")
+    
+    ggplotly(p)
+    hide_legend(p)
+    
+    # } else {
+    # p <- plot_ggdendro(hcdata,
+    #                    fan         = TRUE,
+    #                    #scale.color = cols,
+    #                    label.size  = 2,
+    #                    nudge.label = 0.02,
+    #                    expand.y    = 0.4)
+    # 
+    # mytheme <- theme(panel.background = element_rect(fill = "white"))
+    # 
+    # p + theme_void() + mytheme
+    #}
   }
 })
 
