@@ -521,7 +521,7 @@ tabPanel("Clustering", value="clustering", fluid=TRUE, icon=icon("globe-asia"),
                                                                            #"mahalanobis"="mahalanobis"
                                                                            "minkowski"="minkowski"
                                                                  ),
-                                                                 selected="minkowski"
+                                                                 selected="euclidean"
                                                      ),
                                                      conditionalPanel(condition="input.inSkaterMethod=='minkowski'",
                                                                       sliderInput(inputId = "inMinkowski", label = "Minkowski Power", min = 0, 
@@ -1181,13 +1181,28 @@ observe({
 clusterset <- "global"
 
 clustersetSelect <- reactive({
-  if (input$inLodc=="LAD" | input$inLodEDA=="LAD") {
+  if (input$inLodc=="LAD") {
     maplad_sp
   }
-  else if (input$inLodc=="Ward" | input$inLodEDA=="Ward") {
+  else if (input$inLodc=="Ward") {
     mapward_sp
   }
-  else if (input$inLodc=="MSOA" | input$inLodEDA=="MSOA") {
+  else if (input$inLodc=="MSOA") {
+    mapmsoa_sp 
+  }
+  else {
+    maplsoa_sp 
+  }
+})
+
+clustersetSelectEDA <- reactive({
+  if (input$inLodEDA=="LAD") {
+    maplad_sp
+  }
+  else if (input$inLodEDA=="Ward") {
+    mapward_sp
+  }
+  else if (input$inLodEDA=="MSOA") {
     mapmsoa_sp 
   }
   else {
@@ -1197,7 +1212,7 @@ clustersetSelect <- reactive({
 
 output$corrplotEDA <- renderPlot({
   
-  clusterset <- clustersetSelect()
+  clusterset <- clustersetSelectEDA()
   
   vars <- input$inMeasureClusterEDA
   #  str(input$inMeasure2)
@@ -1563,7 +1578,7 @@ output$dendoplot <- renderPlotly({
     p
   }
   
-  if(input$inLodc!='LSOA'){
+  #if(input$inLodc!='LSOA'){
     dummyLod <- input$inLodc
     vars <- input$inMeasureCluster
     #  str(input$inMeasure2)
@@ -1607,7 +1622,7 @@ output$dendoplot <- renderPlotly({
     # 
     # p + theme_void() + mytheme
     #}
-  }
+  #}
 })
 
 
