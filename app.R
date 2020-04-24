@@ -11,8 +11,6 @@ library(sp)
 library(rgdal)
 library(GWmodel)
 library(plotly)
-
-#jufri
 library(ClustGeo)
 library(dendextend)
 library(GGally)
@@ -21,9 +19,6 @@ library(corrplot)
 library(DT)
 library(shinyWidgets)
 library(RColorBrewer)
-# library(crosstalk)
-#jufri
-
 
 
 # -----Load data files
@@ -38,10 +33,6 @@ load("data/maplad_sf.rda")
 load("data/mapward_sf.rda")
 load("data/mapmsoa_sf.rda")
 load("data/maplsoa_sf.rda")
-# load("data/maplad_sp84.rda")
-# load("data/mapward_sp84.rda")
-# load("data/mapmsoa_sp84.rda")
-# load("data/maplsoa_sp84.rda")
 
 
 # -----All Global Parameters here
@@ -55,7 +46,6 @@ varLod <- c(
 )
   
 # List of LAD
-#varLad <- str_sort(unique(mapward_sp@data$lad_nm))
 varLad <- c(
   "All",
   "City of London",
@@ -436,7 +426,7 @@ ui <- fluidPage(theme=shinytheme("superhero"),
 # -----Clustering Panel
 tabPanel("Clustering", value="clustering", fluid=TRUE, icon=icon("globe-asia"),
          sidebarLayout(position="left", fluid=TRUE,
-                       sidebarPanel("Cluster sidebarPanel", width=3, fluid=TRUE,
+                       sidebarPanel(width=3, fluid=TRUE,
                                     selectInput(inputId="inLodc",
                                                 label="Level of Detail",
                                                 choices=varLod,
@@ -854,24 +844,18 @@ observe({
   input$EdaMeasureX
   if (input$EdaLod=="LAD") {
     edamap=maplad_sf
-    # edamap=maplad_sp84
   }
   else if (input$EdaLod=="Ward") {
     edamap=mapward_sf
-    # edamap=mapward_sp84
   } else if (input$EdaLod=="MSOA") {
     edamap=mapmsoa_sf
-    # edamap=mapmsoa_sp84
   }
   else {
     edamap=maplsoa_sf
-    # edamap=maplsoa_sp84
   }
-  # sd_coords <- as.data.frame(coordinates(edamap)) %>%
-  #   rename(long=V1, lat=V2)
-  # sd <- cbind(edamap@data,sd_coords)
+
   rv$sdata <- highlight_key(edamap, ~area_nm)
-  # rv$sdata <- highlight_key(sd)
+
 })
 
   
@@ -879,9 +863,11 @@ observe({
     
     plot1 <- ggplot(rv$sdata, aes_string(input$EdaMeasureX, input$EdaMeasureY)) +
       geom_point(alpha=0.6,
-                 color="DarkBlue")
+                 color="#08519c") +
+      theme_classic()
     ggplotly(plot1) %>%
-      highlight(on="plotly_selected", off="plotly_deselect")
+      highlight(on="plotly_selected", off="plotly_deselect",
+                opacityDim=0.4)
 
   })
   
@@ -889,37 +875,19 @@ observe({
     
     plot2 <- ggplot(rv$sdata) +
       geom_sf(alpha=0.6,
+              fill="#bdd7e7",
               lwd=0.5,
-              # crs=27700,
-              color="DarkBlue")
+              color="#08519c") +
+      theme_classic()
     ggplotly(plot2) %>%
-      highlight(on="plotly_selected", off="plotly_deselect")
+      highlight(on="plotly_click", off="plotly_doubleclick",
+                opacityDim=0.4)
     
   })
   
-  # output$eda2 <- renderLeaflet({
-  #   
-  #   leaflet(rv$sdata) %>%
-  #     addProviderTiles("Stamen.TonerLite", group = "Toner by Stamen") %>%
-  #     addCircles(lat=~lat,lng=~long, color="DarkBlue")
-  # 
-  #  })
-  
-  # output$eda2 <- renderLeaflet({
-  #   
-  #   plot1 <- tm_shape(rv$sdata) +
-  #     tm_borders(alpha=0.8
-  #     ) +
-  #     tmap_options(basemaps=c("Esri.WorldGrayCanvas","Stamen.TonerLite","OpenStreetMap"),
-  #                  basemaps.alpha=c(0.8,0.5,0.7)
-  #     )
-  #   tmap_leaflet(plot1, in.shiny=TRUE)
-  #   
-  # })
-  
+
 # -----ESDA functions
   legend <- c("insignificant","low-low", "low-high", "high-low", "high-high")
-  #colors <- c("white","blue","sky-blue","darkpink","red")
   colorsRd <- c("#ffffff","#fcae91","#fb6a4a","#de2d26","#a50f15")
   colorsBu <- c("#ffffff","#bdd7e7","#6baed6","#3182bd","#08519c")
   colorsNBu <- c("#08519c","#3182bd","#6baed6","#bdd7e7","#ffffff")
@@ -931,37 +899,18 @@ observe({
     if (input$inLod=="LAD") {
     subset <- maplad_sp[,"area_nm"]
     indicator <- pull(maplad_sp@data, input$inMeasure)
-    # subsetView <- maprgn_sp
     }
     else if (input$inLod=="Ward") {
       subset <- mapward_sp[,"area_nm"]
       indicator <- pull(mapward_sp@data, input$inMeasure)
-      # if (input$inLad=="All") {
-      #   subsetView <- maprgn_sp
-      # }
-      # else {
-      #   subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
-      # }
     }
     else if (input$inLod=="MSOA") {
       subset <- mapmsoa_sp[,"area_nm"]
       indicator <- pull(mapmsoa_sp@data, input$inMeasure)
-      # if (input$inLad=="All") {
-      #   subsetView <- maprgn_sp
-      # }
-      # else {
-      #   subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
-      # }
     }
     else {
       subset <- maplsoa_sp[,"area_nm"]
       indicator <- pull(maplsoa_sp@data, input$inMeasure)
-      # if (input$inLad=="All") {
-      #   subsetView <- maprgn_sp
-      # }
-      # else {
-      #   subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
-      # }
     }
     
     if (input$inLad=="All"){
@@ -1002,22 +951,36 @@ observe({
     DV <- indicator - mean(indicator)
     C_mI <- rv$lmoran[,1] - mean(rv$lmoran[,1])
     
-    quadrant[DV >0 & C_mI>0] <- 4 
-    quadrant[DV <0 & C_mI<0] <- 1 
-    quadrant[DV <0 & C_mI>0] <- 2 
+    quadrant[DV >0 & C_mI>0] <- 4
     quadrant[DV >0 & C_mI<0] <- 3
-    quadrant[rv$lmoran[,5] >input$inLisaSignificance] <- 0
+    quadrant[DV <0 & C_mI>0] <- 2 
+    quadrant[DV <0 & C_mI<0] <- 1 
+    quadrant[rv$lmoran[,5] > as.numeric(input$inLisaSignificance)] <- 0
     
-    subset$quadrant <- quadrant
+    #reference to earlier legend ("insignificant","low-low", "low-high", "high-low", "high-high")
+
+    qText <- vector(mode = "character", length = nrow(rv$lmoran))
+    qText[quadrant==0] <- "insignificant"
+    qText[quadrant==1] <- "low-low"
+    qText[quadrant==2] <- "low-high"
+    qText[quadrant==3] <- "high-low"
+    qText[quadrant==4] <- "high-high"
+    
+    subset$DV <- DV
+    subset$C_mI <- C_mI
+    subset$qText <- qText
+    subset$quadrant <- as.numeric(quadrant)
     
     lisaPlot <- tm_shape(subset) +
       tm_fill("quadrant",
               title="LISA Cluster",
               style="cat",
+              n=5,
               palette=colorsLi,
-              midpoint=0,
+              midpoint=NA,
               labels=legend,
               id="area_nm",
+              popup.vars=c("DV:"="DV","C_mI:"="C_mI","Quadrant:"="qText"),
               alpha=0.8,
               legend.format=list(digits=2)
       ) +
@@ -1047,40 +1010,15 @@ observe({
     else if (input$inLod=="Ward") {
       subset <- mapward_sp[,c("area_nm",input$inMeasure)]
       refDf <- cbind(subset, rv$lmoran)
-      # if (input$inLad=="All") {
-      #   subsetView <- maprgn_sp
-      # }
-      # else {
-      #   subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
-      # }
     }
     else if (input$inLod=="MSOA") {
       subset <- mapmsoa_sp[,c("area_nm",input$inMeasure)]
       refDf <- cbind(subset, rv$lmoran)
-      # if (input$inLad=="All") {
-      #   subsetView <- maprgn_sp
-      # }
-      # else {
-      #   subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
-      # }
     }
     else {
       subset <- maplsoa_sp[,c("area_nm",input$inMeasure)]
       refDf <- cbind(subset, rv$lmoran)
-      # if (input$inLad=="All") {
-      #   subsetView <- maprgn_sp
-      # }
-      # else {
-      #   subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
-      # }
     }
-    
-    # if (input$inLad=="All"){
-    #   subsetView <- maprgn_sp[,"area_nm"]
-    # }
-    # else {
-    #   subsetView <- maplad_sp[maplad_sp$area_nm==input$inLad,"area_nm"]
-    # }
 
     if (input$inReference=="r"){
       tmFill <- input$inMeasure
@@ -1110,6 +1048,7 @@ observe({
                 palette=tmPalette,
                 midpoint=0,
                 id="area_nm",
+                popup.vars=c("Raw_Values"=input$inMeasure, "P_Value:"="Pr.z...0.","Local_Moran's_I:"="Ii"),
                 alpha=0.8,
                 legend.format=list(digits=3)
         ) +
@@ -1164,17 +1103,6 @@ observe({
                 coords1$north)
   }
 }, priority=1)
-
-# observe({
-#   coords2 <- input$reference_bounds
-#   if (!is.null(coords2)) {
-#     leafletProxy("lisa") %>%
-#       fitBounds(coords2$west,
-#                 coords2$south,
-#                 coords2$east,
-#                 coords2$north)
-#   }
-# }, priority=1)
 
 
 # -----Clustering functions
@@ -1827,9 +1755,6 @@ output$showGwrBw <- renderText ({
 output$showGwrDp <- renderText ({
   as.character(rv$GwrDiagnostic$dp.n)
 })
-
-# output$GwrTable <- renderTable(rv$GwrDiagnostic)
-# output$GwrTable <- DT::renderDataTable(rv$GwrDiagnostic)
 
 output$GwrSummary <- renderPrint({
   rv$Gwr
