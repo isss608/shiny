@@ -38,10 +38,10 @@ load("data/maplad_sf.rda")
 load("data/mapward_sf.rda")
 load("data/mapmsoa_sf.rda")
 load("data/maplsoa_sf.rda")
-load("data/maplad_sp84.rda")
-load("data/mapward_sp84.rda")
-load("data/mapmsoa_sp84.rda")
-load("data/maplsoa_sp84.rda")
+# load("data/maplad_sp84.rda")
+# load("data/mapward_sp84.rda")
+# load("data/mapmsoa_sp84.rda")
+# load("data/maplsoa_sp84.rda")
 
 
 # -----All Global Parameters here
@@ -292,8 +292,9 @@ ui <- fluidPage(theme=shinytheme("superhero"),
                                                 plotlyOutput(outputId="eda1", width = "100%", height = "400px", inline = FALSE)
                                                 ),
                                            column(6,
-                                                # plotlyOutput("eda2")   
-                                                leafletOutput("eda2")
+                                                plotlyOutput("eda2")
+                                                # leafletOutput("eda2")
+                                                # tmapOutput("eda2")
                                                 )
                                            )
                                           ,
@@ -638,6 +639,11 @@ tabPanel("Clustering", value="clustering", fluid=TRUE, icon=icon("globe-asia"),
                                                                        value=20,
                                                                        width="75px"
                                                            )
+                                          ),
+                                          checkboxInput(inputId="GwrShowSummary",
+                                                        label="Summary",
+                                                        value=FALSE,
+                                                        width="100%"
                                           )
                                           )
                              ),
@@ -684,94 +690,61 @@ tabPanel("Clustering", value="clustering", fluid=TRUE, icon=icon("globe-asia"),
                                                 leafletOutput("gwr2"),
                                                 column(4,
                                                 HTML(
-                                                  '<div class="info-box-content">
+                                                  '<div class="info-box-content" style="font-weight: lighter; font-size: smaller">
                                                   <span class="info-box-text">GWR Adj R2: </span>
                                                   <span class="info-box-number">
-                                                    <div id="showGwrR2" class="shiny-text-output"></div>
+                                                    <div id="showGwrR2" class="shiny-text-output" style="font-weight: bolder; font-size: larger"></div>
                                                   </span>
                                                   </div>'
                                                 ),
                                                 HTML(
-                                                  '<div class="info-box-content">
-                                                  <span class="info-box-text">GWR AIC: </span>
-                                                  <span class="info-box-number">
-                                                    <div id="showGwrAic" class="shiny-text-output"></div>
-                                                  </span>
-                                                  </div>'
-                                                )),
-                                                column(4,
-                                                HTML(
-                                                  '<div class="info-box-content">
+                                                  '<div class="info-box-content" style="font-weight: lighter; font-size: smaller">
                                                   <span class="info-box-text">LM Adj R2: </span>
                                                   <span class="info-box-number">
-                                                    <div id="showLmR2" class="shiny-text-output"></div>
-                                                  </span>
-                                                  </div>'
-                                                ),
-                                                HTML(
-                                                  '<div class="info-box-content">
-                                                  <span class="info-box-text">LM AIC: </span>
-                                                  <span class="info-box-number">
-                                                    <div id="showLmAic" class="shiny-text-output"></div>
+                                                    <div id="showLmR2" class="shiny-text-output" style="font-weight: bolder; font-size: larger"></div>
                                                   </span>
                                                   </div>'
                                                 )),
                                                 column(4,
                                                 HTML(
-                                                  '<div class="info-box-content">
-                                                  <span class="info-box-text">Bandwidth: </span>
+                                                  '<div class="info-box-content" style="font-weight: lighter; font-size: smaller">
+                                                  <span class="info-box-text">GWR AICc: </span>
                                                   <span class="info-box-number">
-                                                    <div id="showGwrBw" class="shiny-text-output"></div>
+                                                    <div id="showGwrAic" class="shiny-text-output" style="font-weight: bolder; font-size: larger"></div>
                                                   </span>
                                                   </div>'
                                                 ),
                                                 HTML(
-                                                  '<div class="info-box-content">
+                                                  '<div class="info-box-content" style="font-weight: lighter; font-size: smaller">
+                                                  <span class="info-box-text">LM AICc: </span>
+                                                  <span class="info-box-number">
+                                                    <div id="showLmAic" class="shiny-text-output" style="font-weight: bolder; font-size: larger"></div>
+                                                  </span>
+                                                  </div>'
+                                                )),
+                                                column(4,
+                                                HTML(
+                                                  '<div class="info-box-content" style="font-weight: lighter; font-size: smaller">
+                                                  <span class="info-box-text">Bandwidth: </span>
+                                                  <span class="info-box-number">
+                                                    <div id="showGwrBw" class="shiny-text-output" style="font-weight: bolder; font-size: larger"></div>
+                                                  </span>
+                                                  </div>'
+                                                ),
+                                                HTML(
+                                                  '<div class="info-box-content" style="font-weight: lighter; font-size: smaller">
                                                   <span class="info-box-text">Data Points: </span>
                                                   <span class="info-box-number">
-                                                    <div id="showGwrDp" class="shiny-text-output"></div>
+                                                    <div id="showGwrDp" class="shiny-text-output" style="font-weight: bolder; font-size: larger"></div>
                                                   </span>
                                                   </div>'
                                                 ))
-                                                # selectInput(inputId="Gwr2Reference",
-                                                #             label="Reference Value",
-                                                #             choices=c("P-Value"="p",
-                                                #                       "Local R2"="r",
-                                                #                       "Residuals"="i"
-                                                #             ),
-                                                #             selected="p",
-                                                #             multiple=FALSE,
-                                                #             width="100%"
-                                                # ),
-                                                # selectInput(inputId="Gwr2Binning",
-                                                #             label="Binning Method",
-                                                #             choices=c("Std Deviation"="sd",
-                                                #                       "Equal"="equal",
-                                                #                       "Pretty"="pretty",
-                                                #                       "Quantile"="quantile",
-                                                #                       "K-means Cluster"="kmeans",
-                                                #                       "Hierarchical Cluster"="hclust",
-                                                #                       "Bagged Cluster"="bclust",
-                                                #                       "Fisher"="fisher",
-                                                #                       "Jenks"="jenks",
-                                                #                       "Log10 Pretty"="log10_pretty"
-                                                #             ),
-                                                #             selected="quantile",
-                                                #             multiple=FALSE,
-                                                #             width="100%"
-                                                # ),
-                                                # sliderInput(inputId="Gwr2N",
-                                                #             label="Select number of classes",
-                                                #             min=2,
-                                                #             max=10,
-                                                #             value=5,
-                                                #             width="100%"
-                                                # )
                                          )
                                        ),
-                                       # tableOutput(outputId="GwrTable"),
-                                       # DT::dataTableOutput(outputId="GwrTable"),
-                                       verbatimTextOutput(outputId="GwrSummary")
+                                       conditionalPanel(condition="input.GwrShowSummary==1",
+                                                        verbatimTextOutput(outputId="GwrSummary")
+                                       )
+                                       
                              )
                          )
                 ),
@@ -880,20 +853,25 @@ observe({
   input$EdaMeasureY
   input$EdaMeasureX
   if (input$EdaLod=="LAD") {
-    edamap=maplad_sp84
+    edamap=maplad_sf
+    # edamap=maplad_sp84
   }
   else if (input$EdaLod=="Ward") {
-    edamap=mapward_sp84
+    edamap=mapward_sf
+    # edamap=mapward_sp84
   } else if (input$EdaLod=="MSOA") {
-    edamap=mapmsoa_sp84
+    edamap=mapmsoa_sf
+    # edamap=mapmsoa_sp84
   }
   else {
-    edamap=maplsoa_sp84
+    edamap=maplsoa_sf
+    # edamap=maplsoa_sp84
   }
-  sd_coords <- as.data.frame(coordinates(edamap)) %>%
-    rename(long=V1, lat=V2)
-  sd <- cbind(edamap@data,sd_coords)
-  rv$sdata <- highlight_key(sd)
+  # sd_coords <- as.data.frame(coordinates(edamap)) %>%
+  #   rename(long=V1, lat=V2)
+  # sd <- cbind(edamap@data,sd_coords)
+  rv$sdata <- highlight_key(edamap, ~area_nm)
+  # rv$sdata <- highlight_key(sd)
 })
 
   
@@ -907,14 +885,37 @@ observe({
 
   })
   
-  
-  output$eda2 <- renderLeaflet({
+  output$eda2 <- renderPlotly({
     
-    leaflet(rv$sdata) %>%
-      addProviderTiles("Stamen.TonerLite", group = "Toner by Stamen") %>%
-      addCircles(lat=~lat,lng=~long, color="DarkBlue")
-
-   })
+    plot2 <- ggplot(rv$sdata) +
+      geom_sf(alpha=0.6,
+              lwd=0.5,
+              # crs=27700,
+              color="DarkBlue")
+    ggplotly(plot2) %>%
+      highlight(on="plotly_selected", off="plotly_deselect")
+    
+  })
+  
+  # output$eda2 <- renderLeaflet({
+  #   
+  #   leaflet(rv$sdata) %>%
+  #     addProviderTiles("Stamen.TonerLite", group = "Toner by Stamen") %>%
+  #     addCircles(lat=~lat,lng=~long, color="DarkBlue")
+  # 
+  #  })
+  
+  # output$eda2 <- renderLeaflet({
+  #   
+  #   plot1 <- tm_shape(rv$sdata) +
+  #     tm_borders(alpha=0.8
+  #     ) +
+  #     tmap_options(basemaps=c("Esri.WorldGrayCanvas","Stamen.TonerLite","OpenStreetMap"),
+  #                  basemaps.alpha=c(0.8,0.5,0.7)
+  #     )
+  #   tmap_leaflet(plot1, in.shiny=TRUE)
+  #   
+  # })
   
 # -----ESDA functions
   legend <- c("insignificant","low-low", "low-high", "high-low", "high-high")
@@ -1746,7 +1747,7 @@ output$gwr2 <- renderLeaflet({
               style="quantile",
               n=8,
               # breaks=c(-1,-0.999,0,0.999,1),
-              palette=colorsNLi,
+              palette="RdBu",
               midpoint=0,
               id="area_nm",
               alpha=0.8,
@@ -1803,7 +1804,7 @@ output$showGwrR2 <- renderText ({
 })
 
 output$showGwrAic <- renderText ({
-  as.character(round(rv$GwrDiagnostic$AIC,digits=4))
+  as.character(round(rv$GwrDiagnostic$AICc,digits=4))
 })
 
 output$showLmR2 <- renderText ({
@@ -1811,7 +1812,7 @@ output$showLmR2 <- renderText ({
 })
 
 output$showLmAic <- renderText ({
-  as.character(round(rv$GwrDiagnostic$lm_AIC,digits=4))
+  as.character(round(rv$GwrDiagnostic$lm_AICc,digits=4))
 })
 
 output$showGwrBw <- renderText ({
