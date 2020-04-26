@@ -106,13 +106,10 @@ varMeasure1 <- c(
   "Energy_Total"="energy_tot",
   "Energy_Density"="energy_density",
   "H_Nutrients_Weight"="h_nutrients_weight",
-  "H_Nutrients_Weight_Norm"="h_nutrients_weight_norm",
   "H_Nutrients_Calories"="h_nutrients_calories",
-  "H_Nutrients_Calories_Norm"="h_nutrients_calories_norm",
   "H_Items"="h_items",
-  "H_Items_Norm"="h_items_norm",
   "H_Items_Weight"="h_items_weight",
-  "H_Items_Weight_Norm"="h_items_weight_norm",
+  "Num_Transactions"="num_transactions",
   "Representativeness"="representativeness_norm",
   "Population"="population",
   "Male"="male",
@@ -130,7 +127,8 @@ varMeasure2 <- c(
   "Overweight_4-5"="prevalence_overweight_reception",
   "Overweight_6-10"="prevalence_overweight_y6",
   "Obese_4-5"="prevalence_obese_reception",
-  "Obese_6-10"="prevalence_obese_y6"
+  "Obese_6-10"="prevalence_obese_y6",
+  "Diabetes_ward"="estimated_diabetes_prevalence"
 )
 
 # GWR Level of Detail
@@ -800,6 +798,8 @@ server <- function(input, output, session) {
       filterVar='none'
     }
     DF <- as.data.frame(maplad_sp)
+    DF <- DF %>% 
+      mutate_if(is.numeric, round, digits = 3)
     DT::datatable(DF[, input$inDataSelect, drop = FALSE],filter = filterVar,style = "bootstrap")
   })
   
@@ -811,6 +811,8 @@ server <- function(input, output, session) {
       filterVar='none'
     }
     DF <- as.data.frame(mapward_sp)
+    DF <- DF %>% 
+      mutate_if(is.numeric, round, digits = 3)
     DT::datatable(DF[, input$inDataSelect, drop = FALSE],filter = filterVar,style = "bootstrap")
   })
   
@@ -822,6 +824,8 @@ server <- function(input, output, session) {
       filterVar='none'
     }
     DF <- as.data.frame(mapmsoa_sp)
+    DF <- DF %>% 
+      mutate_if(is.numeric, round, digits = 3)
     DT::datatable(DF[, input$inDataSelect, drop = FALSE],filter = filterVar,style = "bootstrap")
   })
   
@@ -834,6 +838,8 @@ server <- function(input, output, session) {
     }
     
     DF <- as.data.frame(maplsoa_sp)
+    DF <- DF %>% 
+      mutate_if(is.numeric, round, digits = 3)
     DT::datatable(DF[, input$inDataSelect, drop = FALSE],filter = filterVar,style = "bootstrap")
   })
   
@@ -890,6 +896,7 @@ observe({
   legend <- c("insignificant","low-low", "low-high", "high-low", "high-high")
   colorsRd <- c("#ffffff","#fcae91","#fb6a4a","#de2d26","#a50f15")
   colorsBu <- c("#ffffff","#bdd7e7","#6baed6","#3182bd","#08519c")
+  colorsBu4 <- c("#bdd7e7","#6baed6","#3182bd","#08519c")
   colorsNBu <- c("#08519c","#3182bd","#6baed6","#bdd7e7","#ffffff")
   colorsLi <- c("#ffffff","#08519c","#6baed6","#fb6a4a","#a50f15")
   colorsNLi <- c("#fddbc7","#f4a582","#d6604d","#b2182b","#2166ac","#4393c3","#92c5de","#d1e5f0")
@@ -1267,7 +1274,7 @@ output$corrplot <- renderPlot({
                  upper = "number",
                  #p.mat = ward.sig$p,
                  sig.level = .05,
-                 tl.pos = "lt",
+                 tl.pos = "lt", #lt",
                  bg = "white",
                  diag = "l",
                  order="AOE",
@@ -1287,6 +1294,8 @@ output$cluster_right <- renderPlotly({
   angglo <- input$inAggloMethod
   ism <- input$inSkaterMethod
   im <- input$inMinkowski
+  #inp <- input$inParFacet
+  
   #  str(input$inMeasure2)
   
   if (input$inLodc!="LAD") {
@@ -1314,10 +1323,13 @@ output$cluster_right <- renderPlotly({
   # hc$labels <- as.factor(clusterset$area_nm)
   numCol=(ncol(sdat2)-1)-1
   
+  my.data <- gather(sdat2, group, has.data, c(1:numCol)) 
+  
+  
   p <- ggparcoord(data = sdat2,
                   columns = c(1:numCol),
                   groupColumn = "cluster",
-                  scale = "uniminmax",
+                  #scale = "uniminmax",
                   #boxplot = TRUE,
                   title = "Parallel Coordinates: Tesco Measures") +
     theme(axis.text.x = element_text(angle = 90),
@@ -1328,10 +1340,17 @@ output$cluster_right <- renderPlotly({
           axis.title.y = element_blank(),
           panel.grid.minor = element_blank()
     )+
-    aes(text = paste('Area nm: ', sdat2$area_nm, '<br>Cluster:',cluster))+
+    aes(text = paste('Area nm: ', sdat2$area_nm,"_",cluster))+#sprintf("Area Nm: %s",  asd$area_nm, cluster))+#
     scale_colour_brewer(palette="RdYlBu")+
-    facet_wrap(~ cluster)+
-    geom_boxplot(fill='#999999')
+    if(input$inParFacet){
+      facet_wrap(~ cluster)
+    }else{
+      facet_wrap(~ "")
+    }
+  
+  
+  p <- p  + geom_boxplot(my.data, mapping=aes_string(x = 'group', y = 'has.data'), width = 0.3,
+                         outlier.color = NA, inherit.aes = FALSE)
   
   # boxplot(sdat2[,1:(ncol(sdat2)-1)],
   #         main = "Multiple boxplots for comparision",
@@ -1508,49 +1527,51 @@ output$dendoplot <- renderPlotly({
   }
   
   #if(input$inLodc!='LSOA'){
-    dummyLod <- input$inLodc
-    vars <- input$inMeasureCluster
-    #  str(input$inMeasure2)
-    sdat <- data.frame(scale(as.data.frame(clusterset)[,vars]))
-    row.names(sdat) <- clusterset$area_id
-    #str(clusterset)
-    
-    D <- dist(sdat, method = 'euclidean')
-    
-    hc  <- hclust(D, input$inAggloMethod)
-    hc$labels <- as.factor(clusterset$area_nm)
-    
-    hcdata <- dendro_data_k(hc, input$inClusterSize)
-    
-    #if(input$inDendoGraph=='tree'){
-    p <- plot_ggdendro(hcdata,
-                       direction   = "rl",
-                       expand.y    = 0.1)
-    
-    p <- p+theme(
-      axis.text.y=element_blank(),
-      axis.ticks.y=element_blank(),
-      axis.title.x = element_blank(),
-      axis.title.y = element_blank()
-    )
-    p <- p + ggtitle("Dendogram: Tesco Measures")
-    p <- p +     scale_colour_brewer(palette="RdYlBu")
-    
-    ggplotly(p)
-    hide_legend(p)
-    
-    # } else {
-    # p <- plot_ggdendro(hcdata,
-    #                    fan         = TRUE,
-    #                    #scale.color = cols,
-    #                    label.size  = 2,
-    #                    nudge.label = 0.02,
-    #                    expand.y    = 0.4)
-    # 
-    # mytheme <- theme(panel.background = element_rect(fill = "white"))
-    # 
-    # p + theme_void() + mytheme
-    #}
+  dummyLod <- input$inLodc
+  vars <- input$inMeasureCluster
+  #  str(input$inMeasure2)
+  sdat <- data.frame(scale(as.data.frame(clusterset)[,vars]))
+  row.names(sdat) <- clusterset$area_id
+  #str(clusterset)
+  
+  D <- dist(sdat, method = 'euclidean')
+  
+  hc  <- hclust(D, input$inAggloMethod)
+  hc$labels <- as.factor(clusterset$area_nm)
+  
+  hcdata <- dendro_data_k(hc, input$inClusterSize)
+  
+  #if(input$inDendoGraph=='tree'){
+  p <- plot_ggdendro(hcdata,
+                     direction   = "rl",
+                     expand.y    = 0.1,
+                     label.size=2,
+                     branch.size=0.5)
+  
+  p <- p+theme(
+    axis.text.y=element_blank(),
+    axis.ticks.y=element_blank(),
+    axis.title.x = element_blank(),
+    axis.title.y = element_blank()
+  )
+  p <- p + ggtitle("Dendogram: Tesco Measures")
+  #p <- p +     scale_colour_brewer(palette="RdYlBu")
+  
+  ggplotly(p,tooltip = NULL)
+  hide_legend(p)
+  
+  # } else {
+  # p <- plot_ggdendro(hcdata,
+  #                    fan         = TRUE,
+  #                    #scale.color = cols,
+  #                    label.size  = 2,
+  #                    nudge.label = 0.02,
+  #                    expand.y    = 0.4)
+  # 
+  # mytheme <- theme(panel.background = element_rect(fill = "white"))
+  # 
+  # p + theme_void() + mytheme
+  #}
   #}
 })
 
@@ -1580,8 +1601,14 @@ output$gwr1 <- renderLeaflet({
     }
   }
   else if (input$GwrLod=="Ward") {
-    GwrDataSp <- mapward_sp
-    GwrDataSf <- mapward_sf
+    if (input$GwrY=="estimated_diabetes_prevalence") {
+      GwrDataSp <- mapward_sp[mapward_sp@data$estimated_diabetes_prevalence!=0,]
+      GwrDataSf <- mapward_sf[mapward_sf$estimated_diabetes_prevalence!=0,]
+    }
+    else {
+      GwrDataSp <- mapward_sp
+      GwrDataSf <- mapward_sf
+    }
     if (input$Gwr1Reference=="Local_R2"){
       Gwr1Title <- "Local R2"
     }
@@ -1629,8 +1656,10 @@ output$gwr1 <- renderLeaflet({
     mutate(dp.n=dp.n)
   GwrSDF <- as.data.frame(rv$Gwr$SDF)
   for (dim_ in rv$variableSelect) {
-    GwrSDF[, paste0(dim_, "_PV")] <- pt(abs(GwrSDF[, paste0(dim_, "_TV")]),df=length(GwrSDF)-1,lower.tail=FALSE)*2
+    # GwrSDF[, paste0(dim_, "_PV")] <- pt(abs(GwrSDF[, paste0(dim_, "_TV")]),df=length(GwrSDF)-1,lower.tail=FALSE)*2
+    GwrSDF[, paste0(dim_, "_PV")] <- pt(abs(GwrSDF[, paste0(dim_, "_TV")]),df=rv$GwrDiagnostic$enp,lower.tail=FALSE)*2
   }
+  # GwrSDF$residual <- abs(GwrSDF$residual)
   rv$GwrResult <- GwrDataSf %>%
     select(area_id,area_nm,lad_id,lad_nm,geometry) %>%
     cbind(., as.matrix(GwrSDF))
@@ -1672,8 +1701,8 @@ output$gwr2 <- renderLeaflet({
     gwr2Plot <- tm_shape(rv$GwrResult) +
       tm_fill("residual",
               title="Residual",
-              style="quantile",
-              n=8,
+              style="sd",
+              # n=6,
               # breaks=c(-1,-0.999,0,0.999,1),
               palette="RdBu",
               midpoint=0,
