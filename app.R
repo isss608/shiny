@@ -22,11 +22,6 @@ library(RColorBrewer)
 
 
 # -----Load data files
-load("data/maprgn_sp.rda")
-load("data/maplad_sp.rda")
-load("data/mapward_sp.rda")
-load("data/mapmsoa_sp.rda")
-load("data/maplsoa_sp.rda")
 load("data/ladbbox.rda")
 load("data/maprgn_sf.rda")
 load("data/maplad_sf.rda")
@@ -34,6 +29,11 @@ load("data/mapward_sf.rda")
 load("data/mapmsoa_sf.rda")
 load("data/maplsoa_sf.rda")
 
+maprgn_sp <- as_Spatial(maprgn_sf)
+maplad_sp <- as_Spatial(maplad_sf)
+mapward_sp <- as_Spatial(mapward_sf)
+mapmsoa_sp <- as_Spatial(mapmsoa_sf)
+maplsoa_sp <- as_Spatial(maplsoa_sf)
 
 # -----All Global Parameters here
 
@@ -1015,7 +1015,6 @@ server <- function(input, output, session) {
     if (input$inLod=="LAD") {
       subset <- maplad_sp[,c("area_nm",input$inMeasure)]
       refDf <- cbind(subset, rv$lmoran)
-      # subsetView <- maprgn_sp
     }
     else if (input$inLod=="Ward") {
       subset <- mapward_sp[,c("area_nm",input$inMeasure)]
@@ -1662,12 +1661,11 @@ server <- function(input, output, session) {
       # GwrSDF[, paste0(dim_, "_PV")] <- pt(abs(GwrSDF[, paste0(dim_, "_TV")]),df=length(GwrSDF)-1,lower.tail=FALSE)*2
       GwrSDF[, paste0(dim_, "_PV")] <- pt(abs(GwrSDF[, paste0(dim_, "_TV")]),df=rv$GwrDiagnostic$enp,lower.tail=FALSE)*2
     }
-    # GwrSDF$residual <- abs(GwrSDF$residual)
+    
     rv$GwrResult <- GwrDataSf %>%
       select(area_id,area_nm,lad_id,lad_nm,geometry) %>%
       cbind(., as.matrix(GwrSDF))
-    
-    
+  
     gwr1Plot <- tm_shape(rv$GwrResult) +
       tm_fill(input$Gwr1Reference,
               title=Gwr1Title,
@@ -1693,9 +1691,9 @@ server <- function(input, output, session) {
       tm_borders(col="black",
                  lwd=3)
     tmap_leaflet(gwr1Plot, in.shiny=TRUE)
-    
-    
+  
   })
+  
   
   output$gwr2 <- renderLeaflet({
     
